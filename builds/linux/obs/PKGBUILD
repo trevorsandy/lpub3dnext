@@ -1,0 +1,97 @@
+# Maintainer: Trevor SANDY <trevor[dot]sandy[at]gmail[dot]com>
+#  Last Update: March 23, 2019
+#  Copyright (c) 2017 - 2019 by Trevor SANDY
+pkgname=lpub3dnext
+pkgver=2.1.0.313
+pkgrel=1
+pkgdesc="An LDraw Building Instruction Editor"
+url="https://github.com/trevorsandy/lpub3dnext.git"
+arch=('x86_64' 'i686')
+license=('GPL3')
+makedepends=('unzip' 'qt5-tools')
+depends=('qt5-base' 'libpng')
+conflicts=()
+replaces=()
+backup=()
+# Build OSMesa from source
+source=("lpub3dnext-git.tar.gz" "complete.zip" "lpub3dldrawunf.zip" "tenteparts.zip" "vexiqparts.zip" "povray.tar.gz" "ldview.tar.gz" "ldglite.tar.gz" "mesa-18.3.5.tar.gz" "glu-9.0.0.tar.bz2")
+noextract=("complete.zip" "lpub3dldrawunf.zip" "tenteparts.zip" "vexiqparts.zip" "povray.tar.gz" "ldview.tar.gz" "ldglite.tar.gz" "mesa-18.3.5.tar.gz" "glu-9.0.0.tar.bz2")
+md5sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+
+prepare() {
+	# loc = ../src
+	echo "  -> Current working directory: $PWD"
+	export WD=$PWD; export LDRAWDIR=${HOME}/ldraw
+	export PLATFORM_PRETTY="Arch Linux"
+	export PLATFORM_CODE="ar"
+	export PLATFORM_VER="2019"
+	export TARGET_CPU="$(uname -m)"
+	if [ -x /usr/lib64/libQt5Core.so.5 ]; then
+		echo "  -> Strip incompatible libQt5Core.so.5 ABI (Qt 5.12)"
+		(sudo strip --remove-section=.note.ABI-tag /usr/lib64/libQt5Core.so.5)
+	fi
+	# Build OSMesa from source
+	echo "  -> Build OSMesa from source.......yes"
+	export build_osmesa="yes"
+	cd ${pkgname}-git
+	chmod +x builds/utilities/CreateRenderers.sh && \
+	./builds/utilities/CreateRenderers.sh
+	# loc = ../src/${pkgname}-git
+	echo "  -> Current working directory: $PWD"
+	if [ -f ../complete.zip ] ; then
+		cp ../complete.zip mainApp/extras
+		echo "LDraw archive library complete.zip copied"
+	else
+		echo "complete.zip not found at $PWD"
+	fi
+	if [ -f ../lpub3dldrawunf.zip ] ; then
+		cp ../lpub3dldrawunf.zip mainApp/extras
+		echo "LDraw archive library lpub3dldrawunf.zip copied"
+	else
+		echo "lpub3dldrawunf.zip not found at $PWD"
+	fi
+	if [ -f ../tenteparts.zip ] ; then
+		cp ../tenteparts.zip mainApp/extras
+		echo "LDraw archive library tenteparts.zip copied"
+	else
+		echo "tenteparts.zip not found at $PWD"
+	fi
+	if [ -f ../vexiqparts.zip ] ; then
+		cp ../vexiqparts.zip mainApp/extras
+		echo "LDraw archive library vexiqparts.zip copied"
+	else
+		echo "vexiqparts.zip not found at $PWD"
+	fi
+	export QT_SELECT=qt5
+	export LP3D_BUILD_PKG=yes
+	if [ -x /usr/bin/qmake ] ; then
+		QMAKE_EXEC=qmake
+	elif [ -x /usr/bin/qmake-qt5 ] ; then
+		QMAKE_EXEC=qmake-qt5
+	fi
+	${QMAKE_EXEC} -makefile CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=pkg
+}
+
+build() {
+	cd ${pkgname}-git
+	make clean
+	make -j$(nproc)
+	# check lpub3d dependencies
+	LP3D_RELEASE="32bit_release"
+	if [[ "${TARGET_CPU}" = "x86_64" || "${TARGET_CPU}" = "aarch64" ]] ; then
+		LP3D_RELEASE="64bit_release"
+	fi
+	versuffix=$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
+	validExe="mainApp/${LP3D_RELEASE}/lpub3d${versuffix}"
+	if [ -f "${validExe}" ] ; then
+		echo "LDD check ${validExe}..."
+		ldd ${validExe} 2>/dev/null
+	else
+		echo "ERROR - LDD check failed for ${PWD}/${validExe}"
+	fi
+}
+
+package() {
+	cd ${pkgname}-git
+	make INSTALL_ROOT=${pkgdir} install
+}

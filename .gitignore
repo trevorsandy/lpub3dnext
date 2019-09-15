@@ -1,0 +1,128 @@
+# files without extension
+# *      
+# !/**/    
+# !*.*
+
+# Compiled source
+*.com
+*.class
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+#*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Packages
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+#*.zip
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.gitignore.autosave
+
+# Build generated files
+mainApp/temp.txt
+mainApp/build.h
+mainApp/docs/temp.txt
+builds/utilities/json/lpub3dupdates.json
+builds/utilities/nsis-scripts/AppVersion.nsh
+builds/utilities/update-config-files.log
+ldvlib/LDVQt/include/*
+
+# Qt Creator generated files
+*.user
+
+# Sourceforge.net source
+builds/source/*
+
+# Signing certs
+builds/utilities/cert/*
+
+# Ldraw Libraries
+builds/utilities/ldrawlibraries/*
+
+# Models
+builds/utilities/models/*
+
+# Releases/builds
+mainApp/release/*
+mainApp/debug/*
+ldrawini/release/*
+ldrawini/debug/*
+quazip/release/*
+quazip/debug/*
+builds/macx/dmgbuilds/*
+builds/windows/release/*
+builds/linux/debbuild/*
+builds/linux/rpmbuild/*
+builds/linux/pkgbuild/*
+mainApp/LDViewMessages.h
+mainApp/StudLogo.h
+ldvlib/LDViewMessages.ini
+
+# Makefiles
+mainApp/Makefile
+ldrawini/Makefile
+quazip/Makefile
+.vs
+LPub3D.sln
+
+# Build artefacts
+builds/windows/release/*
+builds/windows/libs/*
+mainApp/lpub3dsd_plugin_import.cpp
+mainApp/uic_wrapper.bat
+
+# Windows setup archives
+builds/windows/archives/*
+
+# Tools
+tools/*
+
+# Patches
+patches/*
+
+# Logs
+*.log

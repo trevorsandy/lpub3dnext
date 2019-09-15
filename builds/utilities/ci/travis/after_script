@@ -1,0 +1,151 @@
+#!/bin/bash
+#
+# Travis build [after_script] procedures
+#
+#  Trevor SANDY <trevor.sandy@gmail.com>
+#  Last Update: Sep 14, 2019
+#  Copyright (c) 2017 - 2019 by Trevor SANDY
+#
+cd $LP3D_BUILD_FOLDER
+
+# Compile source only build checks (package checks are in Create shell scripts)...
+if [[  "$LP3D_COMPILE_SOURCE" = "true" && -z "$LP3D_BUILD_PKG" ]]; then
+  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+     echo "- build check LPub3D macOS..."
+     SOURCE_DIR=${LP3D_BUILD_FOLDER}/../dmgbuild/lpub3dnext
+     # TODO figure out why Linux check is locking up on Travis-CI
+     source ${SOURCE_DIR}/builds/check/build_checks.sh
+  elif [ "$TRAVIS_OS_NAME" = "linux" ]; then
+     echo "- build check LPub3D Linux..."
+     SOURCE_DIR=${LP3D_BUILD_FOLDER}
+  fi
+  #source ${SOURCE_DIR}/builds/check/build_checks.sh
+fi
+
+if [[ ("$LP3D_BUILD_PKG" = "yes" && "$LP3D_BUILD_APPIMAGE" = "true" && "$TRAVIS_OS_NAME" = "linux" ) ]]; then
+  echo "- build check LPub3D.AppImage bundle..."
+  
+  file_DPkg=$(find $AppImageBuildPath/AppImage -name LPub3D-${LP3D_APP_VERSION_LONG}*.AppImage -type f);
+  SOURCE_DIR=${LP3D_BUILD_FOLDER}
+  
+  # make temp directory and copy AppImage
+  [ -n "$file_DPkg" ] && mkdir appImage_Check && cp -f $file_DPkg appImage_Check/ && \
+  echo "- $(ls ./appImage_Check/*.AppImage) copied to check folder." && \
+  LPUB3D_EXE="appImage_Check/LPub3D-${LP3D_APP_VERSION_LONG}-x86_64.AppImage" || \
+  echo "ERROR - AppImage not copied to check folder.";
+  
+  source ${SOURCE_DIR}/builds/check/build_checks.sh
+  
+fi
+
+cd $LP3D_BUILD_FOLDER
+
+# Gather up and move build artefacts and logs to releases directory
+if [[ "$LP3D_BUILD_PKG" = "yes" && -z "$LP3D_COMPILE_SOURCE" && -z "$LP3D_BUILD_STORAGE" && -z "$LP3D_DEPLOY_PACKAGES" ]]; then
+  if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    echo "Docker-generated Assets:" && find $LP3D_COMPOSE_DIR -type f -not -name "*ocker*";
+    if [ "$LP3D_BUILD_ARCH" = "true" ]; then
+      echo "Copying LPub3D-${LP3D_APP_VERSION_LONG}*.pkg.tar.xz from $LP3D_COMPOSE_DIR..."
+      file_DPkg=$(find $LP3D_COMPOSE_DIR -name LPub3D-${LP3D_APP_VERSION_LONG}*.pkg.tar.xz -type f);
+    fi;
+    if [ "$LP3D_BUILD_FEDORA" = "true" ]; then
+      echo "Copying LPub3D-${LP3D_APP_VERSION_LONG}*.rpm from $LP3D_COMPOSE_DIR..."
+      file_DPkg=$(find $LP3D_COMPOSE_DIR -name LPub3D-${LP3D_APP_VERSION_LONG}*.rpm -type f);
+    fi;
+    if [ "$LP3D_BUILD_UBUNTU" = "true" ]; then
+      echo "Copying LPub3D-${LP3D_APP_VERSION_LONG}*.deb from $LP3D_COMPOSE_DIR..."
+      file_DPkg=$(find $LP3D_COMPOSE_DIR -name LPub3D-${LP3D_APP_VERSION_LONG}*.deb -type f);
+    fi;
+    file_Logs=$(find $LP3D_COMPOSE_DIR -name *.log -type f);
+  fi;
+  if [ "$LP3D_BUILD_MACOS" = "true" ]; then
+    echo "Copying LPub3D-${LP3D_APP_VERSION_LONG}*.dmg from $DmgBuildPath/lpub3dnext..."
+    file_DPkg=$(find $DmgBuildPath/DMGS -name LPub3D-${LP3D_APP_VERSION_LONG}*.dmg -type f);
+    file_Logs=$(find $DmgBuildPath/lpub3dnext -name CreateDmg.sh.log -type f);
+    [ -n "$file_Logs" ] && cp -f $file_Logs $LP3D_LOGS_DIR || echo "ERROR - Logs folder empty, nothing copied";
+    file_Logs=$(find $DmgBuildPath -name CreateRenderers.sh*.log -type f);
+  fi;
+  if [ "$LP3D_BUILD_APPIMAGE" = "true" ]; then
+    echo "Copying LPub3D-${LP3D_APP_VERSION_LONG}*.AppImage from $AppImageBuildPath/AppImage..."
+    file_DPkg=$(find $AppImageBuildPath/AppImage -name LPub3D-${LP3D_APP_VERSION_LONG}*.AppImage -type f);
+    file_Logs=$(find ${LP3D_BUILD_FOLDER} -name CreateAppImage.log -type f);
+    [ -n "$file_Logs" ] && cp -f $file_Logs $LP3D_LOGS_DIR || echo "ERROR - Logs folder empty, nothing copied";
+    file_Logs=$(find ${LP3D_3RD_BUILD_FOLDER} -name CreateRenderers.sh*.log -type f);
+  fi;
+  [ -n "$file_Logs" ] && cp -f $file_Logs $LP3D_LOGS_DIR || echo "ERROR - Logs folder empty, nothing copied";
+  [ -n "$file_DPkg" ] && cp -f $file_DPkg $LP3D_DOWNLOAD_ASSETS || echo "ERROR - Download assets folder empty, nothing copied";
+
+  # Set release or build Dropbox storage path
+  if [ "$LP3D_DEPLOY_PKG" = "yes" ]; then
+    echo "Travis-CI Release Assets:" && find $LP3D_RELEASES_DIR -type f;
+    LP3D_DROPBOX_DIR="$LP3D_DROPBOX_RELEASES_DIR";
+  else
+    echo "Travis-CI Build Assets:" && find $LP3D_RELEASES_DIR -type f;
+    LP3D_DROPBOX_DIR="$LP3D_DROPBOX_BUILDS_DIR";
+  fi;
+
+  # Upload assets to Dropbox for temp storage
+  if [ -f "/tmp/.dropbox_oauth" ]; then
+    chmod +x "${LP3D_CI_DIR}/dropbox_uploader.sh";
+    ./"${LP3D_CI_DIR}/dropbox_uploader.sh" mkdir "$LP3D_DROPBOX_DIR";
+    ./"${LP3D_CI_DIR}/dropbox_uploader.sh" upload "$LP3D_LOGS_DIR" "$LP3D_DROPBOX_DIR"/;
+    ./"${LP3D_CI_DIR}/dropbox_uploader.sh" upload "$LP3D_DOWNLOAD_ASSETS" "$LP3D_DROPBOX_DIR"/;
+    ./"${LP3D_CI_DIR}/dropbox_uploader.sh" list "$LP3D_DROPBOX_DIR";
+  else
+    echo "ERROR - /tmp/.dropbox_oauth token file not found - cannot perform upload";
+  fi;
+
+  # Upload continuous build assets to GitHub
+  if [ "$LP3D_DEPLOY_PKG" != "yes" ]; then
+    export GREP_PATH=grep;
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export GREP_PATH=ggrep; fi
+    curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/trevorsandy/lpub3dnext/commits/master -o repo.txt;
+    export REMOTE=$($GREP_PATH -Po '(?<=: \")(([a-z0-9])\w+)(?=\")' -m 1 repo.txt);
+    export LOCAL=$(git rev-parse HEAD);
+    if [[ "$REMOTE" != "$LOCAL" ]]; then
+       if [ -z "$REMOTE" ]; then
+          echo "ERROR - could not retrieve remote commit hash-object. Aborting upload."
+       else
+          echo "ERROR - Build no longer current. $REMOTE vs $LOCAL. Aborting upload."
+       fi
+       exit 0;
+    fi;
+    wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
+    # Update  Release Title in upload.sh
+    upload_script_file="$LP3D_BUILD_FOLDER/upload.sh"
+    if [ -f ${upload_script_file} -a -r ${upload_script_file} ]; then
+      IFS='/' read -ra SLUG_PARTS <<< "$TRAVIS_REPO_SLUG"; unset IFS;
+      if [ "${SLUG_PARTS[1]}" != "lpub3d" ]; then
+        LP3D_RELEASE_LABEL="Continuous DevOps Build ${LP3D_VER_BUILD} (r${LP3D_VER_REVISION})"
+      else
+        LP3D_RELEASE_LABEL="Continuous Build ${LP3D_VER_BUILD} (r${LP3D_VER_REVISION})"
+      fi
+      if [ "$LP3D_BUILD_MACOS" = "true" ]; then
+        sed -i "" "s/    RELEASE_TITLE=\"Continuous build\"/    RELEASE_TITLE=\"${LP3D_RELEASE_LABEL}\"/" "${upload_script_file}"
+      else
+        sed -i "s/    RELEASE_TITLE=\"Continuous build\"/    RELEASE_TITLE=\"${LP3D_RELEASE_LABEL}\"/" "${upload_script_file}"
+      fi;
+    else
+      echo  "   Error: could not update ${upload_script_file}"
+    fi;
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      if [ "$LP3D_BUILD_ARCH" = "true" ]; then
+        bash upload.sh $LP3D_DOWNLOAD_ASSETS/LPub3D-${LP3D_APP_VERSION_LONG}*.pkg.tar.xz*
+      fi;
+      if [ "$LP3D_BUILD_FEDORA" = "true" ]; then
+        bash upload.sh $LP3D_DOWNLOAD_ASSETS/LPub3D-${LP3D_APP_VERSION_LONG}*.rpm*
+      fi;
+      if [ "$LP3D_BUILD_UBUNTU" = "true" ]; then
+        bash upload.sh $LP3D_DOWNLOAD_ASSETS/LPub3D-${LP3D_APP_VERSION_LONG}*.deb*
+      fi;
+    fi;
+    if [ "$LP3D_BUILD_APPIMAGE" = "true" ]; then
+      bash upload.sh $LP3D_DOWNLOAD_ASSETS/LPub3D-${LP3D_APP_VERSION_LONG}*.AppImage*
+    fi;
+    if [ "$LP3D_BUILD_MACOS" = "true" ]; then
+      bash upload.sh $LP3D_DOWNLOAD_ASSETS/LPub3D-${LP3D_APP_VERSION_LONG}*.dmg*
+    fi;
+    # Sourceforge.net Continuous Deploy
+    source ${LP3D_CI_SCRIPT_DIR}/releases
+  fi;
+fi

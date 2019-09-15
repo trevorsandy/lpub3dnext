@@ -1,0 +1,156 @@
+# Build and check LPub3D on Linux and macOS
+# Trevor SANDY <trevor.sandy@gmail.com>
+# Last Update: Sep 10, 2019
+# Copyright (c) 2017 - 2019 by Trevor SANDY
+#
+language: cpp
+sudo: required
+dist: xenial
+
+git:
+  depth: 150000
+
+cache:
+  ccache: true
+  directories:
+  - ${LP3D_LDRAW_DIR}
+  - ${LP3D_DIST_DIR_BASE}
+
+# The following variables can be set to true from
+# Travis-CI Site->More Options->Settings->Environment Variables
+# LP3D_SKIP_TRAVIS_VAR     ; skip Travis-CI build
+# LP3D_BUILD_PKG_VAR       ; trigger package build
+# LP3D_TEST_SF_DEPLOY_VAR  ; test deploy SourceForge
+# LP3D_SKIP_SF_DEPLOY_VAR  ; skip SourceForge deploy
+# LP3D_BUILD_RENDERERS_VAR ; build specified renderer(s) in compile only configuration
+# LP3D_BUILD_LDGLITE_VAR   ; rebuild LDGLite
+# LP3D_BUILD_LDVIEW_VAR    ; rebuild LDView
+# LP3D_BUILD_POVRAY_VAR    ; rebuild LPub3D-Trace (POV-Ray)
+# LP3D_BUILD_MESALIB_VAR   ; rebuild Mesa library
+#
+# Remove LP3D_BUILD_PKG_VAR to enable LP3D_COMPILE_SOURCE (compile source only)
+#
+env:
+  global:
+    - LP3D_QT_BASE=512
+    - LP3D_LDRAW_DIR=${HOME}/ldraw
+    - LP3D_BUILD_FOLDER=${TRAVIS_BUILD_DIR}
+    - LP3D_RELEASES_DIR=${LP3D_BUILD_FOLDER}/builds/releases
+    - LP3D_LOGS_DIR=${LP3D_RELEASES_DIR}/logs
+    - LP3D_UPDATE_ASSETS=${LP3D_RELEASES_DIR}/updates
+    - LP3D_DOWNLOAD_ASSETS=${LP3D_RELEASES_DIR}/downloads
+    - LP3D_3RD_BUILD_FOLDER=${LP3D_BUILD_FOLDER}/..
+    - LP3D_DIST_DIR_BASE=${LP3D_3RD_BUILD_FOLDER}/lpub3d_3rdparty_base
+    - LP3D_COMPOSE_DIR=builds/linux/docker-compose
+    - LP3D_CI_DIR=builds/utilities/ci
+    - LP3D_SECURE_DIR=builds/utilities/ci/secure
+    - LP3D_CI_SCRIPT_DIR=builds/utilities/ci/travis
+    - LP3D_DROPBOX_BUILDS_DIR=travis-ci/builds
+    - LP3D_DROPBOX_RELEASES_DIR=travis-ci/releases
+    - LP3D_DROPBOX_LOGS_DIR=${LP3D_DROPBOX_RELEASES_DIR}/logs
+    - LP3D_DROPBOX_UPDATES_DIR=${LP3D_DROPBOX_RELEASES_DIR}/updates
+    - LP3D_DROPBOX_DOWNLOADS_DIR=${LP3D_DROPBOX_RELEASES_DIR}/downloads
+    - LP3D_RELEASE_LABEL="LPub3D $(date +'%d.%m.%Y')"
+    - LP3D_VER_LDGLITE=ldglite-1.3
+    - LP3D_VER_LDVIEW=ldview-4.3
+    - LP3D_VER_POVRAY=lpub3d_trace_cui-3.8
+    - LP3D_VER_MESALIB=mesa
+    - LP3D_RELEASE_DESCRIPTION="LPub3D - An LDraw™ editor for LEGO® style digital building instructions."
+
+addons:
+  ssh_known_hosts: trevorsandy@frs.sourceforge.net
+
+stages:
+  - name: Prepare Build Storage
+    if: tag IS blank
+  - name: Prepare Release Storage
+    if: tag =~ ^(?!$)(?:v[0-9]+\.[0-9]+\.[0-9]+_?[^\W]*)?$
+  - name: Build and Package
+  - name: Compile Source
+    if: tag IS blank
+  - name: GitHub and Sourceforge Deploy
+    if: tag =~ ^(?!$)(?:v[0-9]+\.[0-9]+\.[0-9]+_?[^\W]*)?$
+
+before_install:
+  - source ${LP3D_CI_SCRIPT_DIR}/before_install
+
+install:
+  - source ${LP3D_CI_SCRIPT_DIR}/install
+
+before_script:
+  - source ${LP3D_CI_SCRIPT_DIR}/before_script
+
+script:
+  - source ${LP3D_CI_SCRIPT_DIR}/script
+
+after_script:
+  - source ${LP3D_CI_SCRIPT_DIR}/after_script
+
+jobs:
+ fast_finish: true
+ include:
+  - stage: Prepare Build Storage
+    env: LP3D_BUILD_STORAGE=true
+    os: linux
+    compiler: gcc
+    script: source ${LP3D_CI_SCRIPT_DIR}/prepare_store
+  - stage: Prepare Release Storage
+    env: LP3D_DEPLOY_PACKAGES=true
+    os: linux
+    compiler: gcc
+    script: source ${LP3D_CI_SCRIPT_DIR}/prepare_store
+  - stage: Build and Package
+    env: LP3D_BUILD_ARCH=true
+    os: linux
+    compiler: gcc
+  - stage: Build and Package
+    env: LP3D_BUILD_FEDORA=true
+    os: linux
+    compiler: gcc
+  - stage: Build and Package
+    env: LP3D_BUILD_UBUNTU=true
+    os: linux
+    compiler: gcc
+  - stage: Build and Package
+    env: LP3D_BUILD_APPIMAGE=true
+    os: linux
+    compiler: gcc
+  - stage: Build and Package
+    env: LP3D_BUILD_MACOS=true
+    os: osx
+    compiler: clang
+  - stage: Compile Source
+    env: LP3D_COMPILE_SOURCE=true
+    os: linux
+    compiler: gcc
+  - stage: Compile Source
+    env: LP3D_COMPILE_SOURCE=true
+    os: osx
+    compiler: clang
+  - stage: GitHub and Sourceforge Deploy
+    env: LP3D_DEPLOY_PACKAGES=true
+    script: source ${LP3D_CI_SCRIPT_DIR}/releases
+    deploy:
+      provider: releases
+      name: $LP3D_RELEASE_LABEL
+      body: $LP3D_RELEASE_DESCRIPTION
+      api_key:
+        secure: 0VbgS6HkGhbxR509yW8hb/TQd/RAKdSmbEqVx0fc0+Qkb4UJvziKMEprvcv3+5MFwR/zYbi5A0zRmUhPjalE5v22S3DuJQj7ILPt79kW5jsm/BfO78RHYOglKwxKDWfWdiMyUMqU+CqP5+W/fHpz5KiO1yjzIuzsDssfcQdu5ofyBH8wp9piutM5o6kS6Kn+RGS1OmcNT1gV/ttvpeg8HrAAj/TAY5X/vANz1pxTFYFBZNhY/KSIVVAM2ntYFbdFTD5mWa8/mxRw0eNed/xpvSVPG0uChF+FnyultnQ5fip4L2roQB27qdth29OHzhWQk3eoI+qB/gMh9fHPgLLlXBC2I9/BDvywruPfcTkBhYwQYogmn4NG/4YESA/qxRUq72zAx0QkvZeCRxH91+gmVBAGUCwq/FuiA5MEy2We427ai/sp1Csinm+OXMZPpQm7rhJxdDa0HQcI1bJwiwKcHO+Ktnd7euXDMJYOAJfeOpYS6dNEvPx0myz3V4kWt6gp4T0dk7NQfc6FSU6RTZ06vX4eUH4WGpekH3Ecztj2Q0CTJHUmnYMbB4vYtbrpMmFqfEB75yL8j0cgXxNGWmMmTf4dNJi1BIZDS/1XflvlmuCkccZyemoTG0dBacYS/dwZcLCZphJq451rZRbiYt0y1FQQNP1DFWQRL7aKJE8QYxI=
+      file_glob: true
+      file: $LP3D_DOWNLOAD_ASSETS/*
+      overwrite: true
+      skip_cleanup: true
+      on:
+        repo: trevorsandy/lpub3d
+        branch: $TRAVIS_BRANCH
+        condition: $LP3D_DEPLOY_PKG = yes
+
+branches:
+  except:
+    - # Do not build tags that we create for upload to GitHub Releases
+    - /^(?i:continuous)/
+
+notifications:
+  email:
+    on_success: never
+    on_failure: always

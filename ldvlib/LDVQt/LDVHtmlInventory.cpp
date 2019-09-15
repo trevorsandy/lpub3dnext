@@ -1,0 +1,1687 @@
+#include "LDVHtmlInventory.h"
+#include <LDLib/LDPartsList.h>
+#include <LDLib/LDPartCount.h>
+#include <LDLoader/LDLMainModel.h>
+#include <TCFoundation/TCLocalStrings.h>
+#include <TCFoundation/mystring.h>
+#include <LDLib/LDPreferences.h>
+#include <LDLib/LDrawModelViewer.h>
+#include <LDLib/LDViewPoint.h>
+#include <LDLib/LDUserDefaultsKeys.h>
+#include <string>
+
+#include <QDir>
+#include <QFileInfo>
+#include <QApplication>
+#include <QProgressDialog>
+#include <QMessageBox>
+
+#include "LDVWidget.h"
+#include "LDVWidgetDefaultKeys.h"
+#include "messageboxresizable.h"
+#include "annotations.h"
+#include "paths.h"
+#include "meta.h"
+#include "version.h"
+
+#ifdef WIN32
+#if defined(_MSC_VER) && _MSC_VER >= 1400 && defined(_DEBUG)
+#define new DEBUG_CLIENTBLOCK
+#endif // _DEBUG
+#endif // WIN32
+
+#define SNAPSHOT_WIDTH_DEFAULT 400
+#define SNAPSHOT_HEIGHT_DEFAULT 300
+#define REBRICKABLE_KEY_DEFAULT ""
+
+const char *LDVHtmlInventory::sm_style = "\
+body\n\
+{\n\
+	font-family: tahoma, sans-serif;\n\
+}\n\
+\n\
+div\n\
+{\n\
+	position: absolute;\n\
+}\n\
+\n\
+table\n\
+{\n\
+	border-collapse: collapse;\n\
+	border: 2px solid #000000;\n\
+	background-color: #F9F0F0 // #FFFFDD;\n\
+	padding: 0px;\n\
+}\n\
+\n\
+table.titleImage\n\
+{\n\
+	width: 100%;\n\
+	border-bottom: 0px;\n\
+}\n\
+\n\
+table.contentTable\n\
+{\n\
+	width: 100%;\n\
+}\n\
+\n\
+th.titleImage\n\
+{\n\
+	background-color: #EEEEEE;\n\
+	color: #000000;\n\
+	font-size: 150%;\n\
+	border-bottom-style: none;\n\
+	padding-bottom: 0px;\n\
+}\n\
+\n\
+tr\n\
+{\n\
+	page-break-inside: avoid;\n\
+}\n\
+\n\
+th\n\
+{\n\
+	background-color: #AA0000;\n\
+	border-bottom: 1px solid #000000;\n\
+	border-right: 1px solid #00558A;\n\
+	padding: 4px 8px;\n\
+	white-space: nowrap;\n\
+}\n\
+\n\
+th.title\n\
+{\n\
+	background-color: #EEEEEE;\n\
+	padding-bottom: 0px;\n\
+	border-bottom: 0px;\n\
+	color: #000000;\n\
+	font-size: 150%;\n\
+}\n\
+\n\
+th.unique\n\
+{\n\
+	background-color: #EEEEEE;\n\
+	padding-top: 0px;\n\
+	padding-bottom: 8px;\n\
+}\n\
+\n\
+th.uniqueitems\n\
+{\n\
+	font-weight: normal;\n\
+	background-color: #EEEEEE;\n\
+	border-style: none;\n\
+	padding: 0px;\n\
+}\n\
+\n\
+td\n\
+{\n\
+	vertical-align: top;\n\
+	background-color: #F9F0F0; // #FFFFDD;\n\
+	border-bottom: 1px solid #BFBFA5;\n\
+	border-right: 1px solid #BFBFA5;\n\
+	padding: 2px 8px;\n\
+}\n\
+\n\
+td.elementid\n\
+{\n\
+	text-align: right;\n\
+}\n\
+\n\
+td.partnum\n\
+{\n\
+	text-align: right;\n\
+}\n\
+\n\
+td.quantity\n\
+{\n\
+	text-align: right;\n\
+}\n\
+\n\
+td.colorNumber\n\
+{\n\
+	text-align: right;\n\
+	border-right-style: none;\n\
+}\n\
+\n\
+td.image\n\
+{\n\
+	border-right-style: none;\n\
+}\n\
+\n\
+table.color\n\
+{\n\
+	border-style: none;\n\
+	width: 100%;\n\
+}\n\
+\n\
+table.color td\n\
+{\n\
+	border-style: none;\n\
+	padding: 0px 8px 0px 0px;\n\
+	width: 100%\n\
+}\n\
+\n\
+table.color td.colorBox\n\
+{\n\
+	padding: 1px 0px;\n\
+	width: auto\n\
+}\n\
+\n\
+table.colorBox\n\
+{\n\
+	border: 1px solid black;\n\
+	width: 2em;\n\
+	height: 1em;\n\
+	padding: 0px;\n\
+}\n\
+\n\
+table.colorBox td\n\
+{\n\
+	padding: 0px;\n\
+}\n\
+\n\
+table.credits\n\
+{\n\
+	border-collapse: collapse;\n\
+	border-style: none;\n\
+	background-color: transparent;\n\
+	margin: 0px;\n\
+	width: 100%;\n\
+}\n\
+\n\
+table.credits td\n\
+{\n\
+	background-color: transparent;\n\
+	color: #808080;\n\
+	border-style: none;\n\
+	font-size: 65%;\n\
+}\n\
+\n\
+table.uniqueitems\n\
+{\n\
+	border-style: none;\n\
+	background-color: transparent;\n\
+	margin: 0px;\n\
+	width: 100%;\n\
+}\n\
+\n\
+a\n\
+{\n\
+	text-decoration: none;\n\
+	border-style: none;\n\
+}\n\
+\n\
+a:link\n\
+{\n\
+	color: #000080;\n\
+}\n\
+\n\
+a:visited\n\
+{\n\
+	color: #0000FF;\n\
+}\n\
+\n\
+a:hover\n\
+{\n\
+	text-decoration: underline;\n\
+	color: #000080;\n\
+}\n\
+\n\
+a.header:link\n\
+{\n\
+	color: #FFFFFF;\n\
+}\n\
+\n\
+a.header:visited\n\
+{\n\
+	color: #FFFFFF;\n\
+}\n\
+\n\
+a.header:hover\n\
+{\n\
+	text-decoration: underline;\n\
+	color: #C39797;\n\
+}\n\
+\n\
+img\n\
+{\n\
+	float: right;\n\
+	width: auto;\n\
+	height: auto;\n\
+	max-height: 50%;\n\
+	max-width: 50%;\n\
+}\n\
+\n\
+th img\n\
+{\n\
+	float: none;\n\
+}\n\
+\n\
+a img\n\
+{\n\
+	border-style: none;\n\
+}\n\
+\n\
+:link:hover img\n\
+{\n\
+	background-color: #D0E8FF;\n\
+}\n\
+\n\
+:visited:hover img\n\
+{\n\
+	background-color: #A0C0FF;\n\
+}\n\
+\n\
+button {\n\
+	padding: 0;\n\
+	border: none;\n\
+	font: inherit;\n\
+	color: inherit;\n\
+	background-color: inherit;\n\
+	cursor: pointer;\n\
+}\n\
+\n\
+.btn {\n\
+	display: inline-block;\n\
+	text-align: center;\n\
+	text-decoration: none;\n\
+	font-weight: normal;\n\
+\n\
+	border: solid 1px transparent;\n\
+	border-radius: 1px;\n\
+\n\
+	color: #AA0000;\n\
+	background-color: inherit;\n\
+\n\
+	outline: none;\n\
+	box-shadow: 0 0 0 1px rgba(255, 105, 180, 0.5),\n\
+		0 0 0 1px rgba(255, 105, 180, 0.5);\n\
+}\n\
+\n\
+.btn:active {\n\
+	transform: translateY(1px);\n\
+	filter: saturate(150%);\n\
+}\n\
+\n\
+.btn:hover {\n\
+	color: #C39797;\n\
+	border-color: currentColor;\n\
+	background-color: #C39797;\n\
+}\n\
+\n\
+.btn::-moz-focus-inner {\n\
+	border: none;\n\
+}\n\
+";
+
+const char *LDVHtmlInventory::sm_cssHeader = "\
+/* CSS Style Sheet auto-generated by LPub3D LDV */\n\
+\n\
+";
+
+const char *LDVHtmlInventory::sm_cssFilename = "LDViewPartsList.css";
+
+const char *LDVHtmlInventory::sm_script = "\
+\n\
+var ascending;\n\
+var partdescAscending;\n\
+var partnumAscending;\n\
+var colorNumberAscending;\n\
+var colorpropsAscending;\n\
+var elementidAscending;\n\
+var quantityAscending;\n\
+var partdescAscending;\n\
+\n\
+function initializeGlobals() {\n\
+	ascending = true;\n\
+	partdescAscending = ascending;\n\
+	partnumAscending = ascending;\n\
+	colorNumberAscending = ascending;\n\
+	colorpropsAscending = ascending;\n\
+	elementidAscending = ascending;\n\
+	quantityAscending = ascending;\n\
+	partdescAscending = ascending;\n\
+}\n\
+\n\
+function sortDirection(set, columnClassName) {\n\
+	if (columnClassName == 'image') {\n\
+		if (set)\n\
+			partdescAscending = !partdescAscending;\n\
+		ascending = partdescAscending;\n\
+	} else if (columnClassName == 'partnum') {\n\
+		if (set)\n\
+			partnumAscending = !partnumAscending;\n\
+		ascending = partnumAscending;\n\
+	} else if (columnClassName == 'colorNumber') {\n\
+		if (set)\n\
+			colorNumberAscending = !colorNumberAscending;\n\
+		ascending = colorNumberAscending;\n\
+	} else if (columnClassName == 'colorprops') {\n\
+		if (set)\n\
+			colorpropsAscending = !colorpropsAscending;\n\
+		ascending = colorpropsAscending;\n\
+	} else if (columnClassName == 'elementid') {\n\
+		if (set)\n\
+			elementidAscending = !elementidAscending;\n\
+		ascending = elementidAscending;\n\
+	} else if (columnClassName == 'quantity') {\n\
+		if (set)\n\
+			quantityAscending = !quantityAscending;\n\
+		ascending = quantityAscending;\n\
+	} else if (columnClassName == 'partdesc') {\n\
+		if (set)\n\
+			partdescAscending = !partdescAscending;\n\
+		ascending = partdescAscending;\n\
+	}\n\
+\n\
+	if (set) {\n\
+		if (ascending)\n\
+			event.target.title = 'Sort Ascending';\n\
+		else\n\
+			event.target.title = 'Sort Descending';\n\
+	}\n\
+}\n\
+\n\
+function isValid(value, nextValue) {\n\
+	return (!notDefined(value) && !notDefined(nextValue));\n\
+}\n\
+\n\
+function notDefined(value){\n\
+	var undefined = void(0);\n\
+	return value === undefined;\n\
+}\n\
+\n\
+function image(row) {\n\
+	var cell = row.getElementsByClassName('image')[0];\n\
+	if (notDefined(cell))\n\
+		return null;\n\
+	sortDirection(false, 'image');\n\
+	var theImg = new Image();\n\
+	var imgSrc = cell.getElementsByTagName('img')[0].src;\n\
+	theImg.src = imgSrc;\n\
+	return (theImg.width * theImg.height);\n\
+}\n\
+\n\
+function color(row) {\n\
+	var value = row.getElementsByClassName('colorNumber')[0].innerHTML;\n\
+	if (notDefined(value))\n\
+		return null;\n\
+	sortDirection(false, 'colorNumber');\n\
+	value = value.slice(':',-1);\n\
+	return value;\n\
+}\n\
+\n\
+function quantity(row) {\n\
+	var value = row.getElementsByClassName('quantity')[0].innerHTML;\n\
+	if (notDefined(value))\n\
+		return null;\n\
+	sortDirection(false, 'quantity');\n\
+	return value;\n\
+}\n\
+\n\
+function sort(columnClassName, tableId) {\n\
+	var tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];\n\
+	var rows = tbody.getElementsByTagName('tr');\n\
+	var adv = 3; // skip 1 row in the color-table, 1 row in the color-box-table and advance 1 row\n\
+\n\
+	var unsorted = true;\n\
+	\n\
+	sortDirection(false, columnClassName);\n\
+\n\
+	while (unsorted) {\n\
+\n\
+		unsorted = false;\n\
+\n\
+		for (var r1 = 0; r1 < rows.length - 1; r1 += adv) {\n\
+\n\
+			var r2 = r1 + adv;\n\
+\n\
+			if (r2 < rows.length) {\n\
+\n\
+				var row = rows[r1];\n\
+				var nextRow = rows[r2];\n\
+\n\
+				var value = row.getElementsByClassName(columnClassName)[0].innerHTML;\n\
+				var nextValue = nextRow.getElementsByClassName(columnClassName)[0].innerHTML;\n\
+\n\
+				var orderedByColor = false;\n\
+				var orderedByImage = false;\n\
+				var orderedByQuantity = true; // disabled\n\
+\n\
+				if (columnClassName == 'image') {\n\
+					value = image(row);\n\
+					nextValue = image(nextRow);\n\
+					orderedByImage = true;\n\
+				} else if (columnClassName == 'colorNumber') {\n\
+					value = color(row);\n\
+					nextValue = color(nextRow);\n\
+					orderedByColor = true;\n\
+				} else if (columnClassName == 'colorprops') {\n\
+					orderedByColor = true;\n\
+				} else if (columnClassName == 'elementid') {\n\
+					value = value.replace('-','.');\n\
+					nextValue = nextValue.replace('-','.');\n\
+				} else if (columnClassName == 'quantity') {\n\
+					orderedByQuantity = true;\n\
+				}\n\
+\n\
+				if (!isNaN(value) && !isNaN(nextValue)) {\n\
+					value = parseFloat(value);\n\
+					nextValue = parseFloat(nextValue);\n\
+				}\n\
+\n\
+				if (isValid(value, nextValue) &&\n\
+					(value == nextValue) &&\n\
+					!orderedByColor) {\n\
+					value = color(row);\n\
+					nextValue = color(nextRow);\n\
+					orderedByColor = true;\n\
+				}  \n\
+\n\
+				if (isValid(value, nextValue) &&\n\
+					(value == nextValue) &&\n\
+					!orderedByImage) {\n\
+					value = image(row);\n\
+					nextValue = image(nextRow);\n\
+					orderedByImage = true;\n\
+				}\n\
+\n\
+				if (isValid(value, nextValue) &&\n\
+					(value == nextValue) &&\n\
+					!orderedByQuantity) {\n\
+					value = quantity(row);\n\
+					nextValue = quantity(nextRow);\n\
+					orderedByQuantity = true;\n\
+				}\n\
+\n\
+				if (isValid(value, nextValue) && (ascending ? value > nextValue : value < nextValue)) {\n\
+					tbody.insertBefore(nextRow, row);\n\
+					unsorted = true;\n\
+				}\n\
+\n\
+				sortDirection(false, columnClassName);\n\
+			}\n\
+		}\n\
+	}\n\
+};\n\
+";
+
+LDVHtmlInventory::LDVHtmlInventory(void) :
+	m_prefs(new LDPreferences),
+	m_viewPoint(nullptr)
+{
+	int i;
+
+	m_prefs->loadInventorySettings();
+	m_showModel = m_prefs->getInvShowModel();
+	m_overwriteSnapshot = m_prefs->getInvOverwriteSnapshot();
+	m_externalCss = m_prefs->getInvExternalCss();
+	m_partImages = m_prefs->getInvPartImages();
+	m_showFile = m_prefs->getInvShowFile();
+	m_showTotal = m_prefs->getInvShowTotal();
+	m_lastSavePath = m_prefs->getInvLastSavePath();
+
+	loadOtherSettings(); // this must come before columnOrder init
+
+	const LongVector &columnOrder = m_prefs->getInvColumnOrder();
+	for (i = 0; i < (int)columnOrder.size(); i++)
+	{
+		m_columnOrder.push_back((LDVPartListColumn)columnOrder[i]);
+	}
+
+	Meta meta; // use BOM element setting
+	bool bl = meta.LPub.bom.partElements.bricklinkElements.value();
+	m_lookupDefault = bl ? LookUp::Bricklink : LookUp::Rebrickable;
+	m_elementDefault = bl ? ElementSrc::BL : ElementSrc::LEGO;
+}
+
+LDVHtmlInventory::~LDVHtmlInventory(void)
+{
+}
+
+void LDVHtmlInventory::dealloc(void)
+{
+	m_prefs->release();
+	TCObject::dealloc();
+}
+
+void LDVHtmlInventory::populateColumnMap(void)
+{
+	int i;
+
+	m_columns = (int)m_columnOrder.size();
+	m_columnMap.clear();
+	for (i = 0; i < (int)m_columnOrder.size(); i++)
+	{
+		LDVPartListColumn column = m_columnOrder[i];
+
+		m_columnMap[column] = true;
+		switch (column)
+		{
+		case LDVPLCPart:
+			if (m_partImages)
+			{
+				m_columns++;
+			}
+			break;
+		case LDVPLCColor:
+			m_columns++;
+			break;
+		default:
+			// Get rid of gcc warning
+			break;
+		}
+	}
+}
+
+bool LDVHtmlInventory::generateHtml(
+	const char *filename,
+	LDPartsList *partsList,
+	const char *modelName)
+{
+	FILE *file = ucfopen(filename, "w");
+	size_t nSlashSpot;
+
+	m_lastFilename = filename;
+	m_lastSavePath = filename;
+	populateColumnMap();
+	nSlashSpot = m_lastSavePath.find_last_of("/\\");
+	if (nSlashSpot < m_lastSavePath.size())
+	{
+		m_lastSavePath = m_lastSavePath.substr(0, nSlashSpot);
+	}
+	m_prefs->setInvLastSavePath(m_lastSavePath.c_str());
+	m_prefs->commitInventorySettings();
+	m_modelName = modelName;
+	nSlashSpot = m_modelName.find_last_of("/\\");
+	if (nSlashSpot < m_modelName.size())
+	{
+		m_modelName = m_modelName.substr(nSlashSpot + 1);
+	}
+	if (file)
+	{
+		QProgressDialog* ProgressDialog = new QProgressDialog(nullptr);
+		ProgressDialog->setWindowFlags(ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
+		ProgressDialog->setWindowTitle(QString("HTML Part List"));
+		ProgressDialog->setLabelText(QString("Generating %1 HTML Part List...")
+											 .arg(QFileInfo(filename).completeBaseName()));
+		ProgressDialog->setMinimum(0);
+		ProgressDialog->setValue(0);
+		ProgressDialog->setCancelButton(nullptr);
+		ProgressDialog->setAutoReset(false);
+		ProgressDialog->setModal(true);
+		ProgressDialog->show();
+
+		const LDPartCountVector &partCounts = partsList->getPartCounts();
+		int i, j;
+
+		int uniqueParts = int(partCounts.size());
+		int invalidElements = 0;
+		int uniqueElements = 0;
+
+		QStringList partList;
+
+		IntVector uniqueColors;
+		for (i = 0; i < uniqueParts; i++)
+		{
+			const LDPartCount &partCount = partCounts[i];
+			const IntVector &colors = partCount.getColors();
+			int elements = (int)colors.size();
+			uniqueElements += elements;
+			QString ldPartId(QFileInfo(QString::fromStdString(partCount.getFilename())).completeBaseName());
+			partList.append(ldPartId);
+			for (j = 0; j < elements; j++)
+			{
+				QString ldColorId(QString::number(colors[j]));
+				QString elementId = Annotations::getBLElement(
+					ldColorId, ldPartId,
+					getElementSource());
+				if (elementId.isEmpty()) {
+					invalidElements++;
+					uniqueElements--;
+				}
+				if (find(uniqueColors.begin(), uniqueColors.end(), colors[j]) == uniqueColors.end())
+					uniqueColors.push_back(colors[j]);
+			}
+		}
+
+		if (getLookupSite() == LookUp::Rebrickable &&
+			partList.size() &&
+			m_modelWidget) {
+			m_modelWidget->doSetRebrickableParts(partList.join(","));
+		}
+
+		ProgressDialog->setMaximum(uniqueParts);
+
+		writeHeader(file);
+		writeTableHeader(file, partsList->getTotalParts(), invalidElements,
+						 uniqueElements, uniqueParts, uniqueColors.size());
+		for (i = 0; i < uniqueParts; i++)
+		{
+			ProgressDialog->setValue(i);
+			QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+			const LDPartCount &partCount = partCounts[i];
+			const IntVector &colors = partCount.getColors();
+			LDLModel *model = const_cast<LDLModel *>(partCount.getModel());
+			LDLPalette *palette = model->getMainModel()->getPalette();
+
+			for (j = 0; j < (int)colors.size(); j++)
+			{
+				int colorNumber = colors[j];
+				LDLColorInfo colorInfo = palette->getAnyColorInfo(colorNumber);
+
+				writePartRow(file, partCount, palette, colorInfo, colorNumber);
+			}
+		}
+		writeTableFooter(file);
+		writeFooter(file);
+		fclose(file);
+
+		ProgressDialog->setValue(uniqueParts);
+		ProgressDialog->hide();
+		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		ProgressDialog->deleteLater();
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+// *** Settings Flags ***
+
+// Note: this class doesn't actually use these flags; it just keeps track of
+// the value and makes sure it gets saved and restored in the user defaults.
+void LDVHtmlInventory::setGeneratePdfFlag(bool value)
+{
+	setOtherSetting(m_generatePdf, value, PARTS_LIST_GENERATE_PDF_KEY, true);
+}
+
+void LDVHtmlInventory::setLookupSiteFlag(int value)
+{
+	setOtherSetting(m_lookupSite, value, PARTS_LIST_LOOKUP_SITE_KEY, true);
+}
+
+void LDVHtmlInventory::setElementSourceFlag(int value)
+{
+	setOtherSetting(m_elementSource, value, PARTS_LIST_ELEMENT_SRURCE_KEY, true);
+}
+
+void LDVHtmlInventory::setSnapshotWidthFlag(int value)
+{
+	setOtherSetting(m_snapshotWidth, value, SAVE_WIDTH_KEY, true);
+}
+
+void LDVHtmlInventory::setSnapshotHeightFlag(int value)
+{
+	setOtherSetting(m_snapshotHeight, value, SAVE_HEIGHT_KEY, true);
+}
+
+void LDVHtmlInventory::setRebrickableKeyFlag(std::string  value)
+{
+	setOtherSetting(m_rebrickableKey, value, PARTS_LIST_REBRICKABLE_KEY_KEY, true);
+}
+
+bool LDVHtmlInventory::getGeneratePdfFlag()
+{
+	m_generatePdf = getBoolSetting(PARTS_LIST_GENERATE_PDF_KEY);
+	return m_generatePdf;
+}
+
+int LDVHtmlInventory::getLookupSiteFlag()
+{
+	m_lookupSite = getIntSetting(PARTS_LIST_LOOKUP_SITE_KEY,m_lookupDefault);
+	return m_lookupSite;
+}
+
+int LDVHtmlInventory::getElementSourceFlag()
+{
+	m_elementSource = getIntSetting(PARTS_LIST_ELEMENT_SRURCE_KEY,m_elementDefault);
+	return m_elementSource;
+}
+
+int LDVHtmlInventory::getSnapshotWidthFlag()
+{
+	m_snapshotWidth = getIntSetting(SAVE_WIDTH_KEY,SNAPSHOT_WIDTH_DEFAULT);
+	return m_snapshotWidth;
+}
+
+int LDVHtmlInventory::getSnapshotHeightFlag()
+{
+	m_snapshotHeight = getIntSetting(SAVE_HEIGHT_KEY,SNAPSHOT_HEIGHT_DEFAULT);
+	return m_snapshotHeight;
+}
+
+std::string  LDVHtmlInventory::getRebrickableKeyFlag()
+{
+	m_rebrickableKey = getStringSetting(PARTS_LIST_REBRICKABLE_KEY_KEY,REBRICKABLE_KEY_DEFAULT);
+	return m_rebrickableKey;
+}
+
+void LDVHtmlInventory::loadOtherSettings(void)
+{
+	getGeneratePdfFlag();
+	getLookupSiteFlag();
+	getElementSourceFlag();
+	getSnapshotWidthFlag();
+	getSnapshotHeightFlag();
+	getRebrickableKeyFlag();
+	LongVector columnOrder;
+	columnOrder.push_back(1);	// Part
+	columnOrder.push_back(3);	// Color
+	columnOrder.push_back(4);	// Element
+	columnOrder.push_back(5);	// Quantity
+	m_prefs->setInvColumnOrder(columnOrder);
+}
+
+void LDVHtmlInventory::setOtherSetting(
+	bool &setting,
+	bool value,
+	const char *key,
+	bool commit)
+{
+	if (setting != value)
+	{
+		setting = value;
+		if (commit)
+		{
+			TCUserDefaults::setLongForKey(value ? 1 : 0, key,
+				true /*!m_globalSettings[key]*/);
+		}
+	}
+}
+
+void LDVHtmlInventory::setOtherSetting(
+	int &setting,
+	int value,
+	const char *key,
+	bool commit)
+{
+	if (setting != value)
+	{
+		setting = value;
+		if (commit)
+		{
+			TCUserDefaults::setLongForKey(value, key, true /*!m_globalSettings[key]*/);
+		}
+	}
+}
+
+void LDVHtmlInventory::setOtherSetting(
+	std::string &setting,
+	const std::string &value,
+	const char *key,
+	bool commit,
+	bool isPath /*= false*/)
+{
+	if (setting != value)
+	{
+		setting = value;
+		if (commit)
+		{
+			if (isPath)
+			{
+				TCUserDefaults::setPathForKey(value.c_str(), key,
+					true /*!m_globalSettings[key]*/);
+			}
+			else
+			{
+				TCUserDefaults::setStringForKey(value.c_str(), key,
+					true /*!m_globalSettings[key]*/);
+			}
+		}
+	}
+}
+
+bool LDVHtmlInventory::getBoolSetting(const char *key, bool defaultValue)
+{
+	return TCUserDefaults::longForKey(key, (long)defaultValue,
+		true /*!m_globalSettings[key]*/) != 0;
+}
+
+int LDVHtmlInventory::getIntSetting(const char *key, int defaultValue)
+{
+	return (int)TCUserDefaults::longForKey(key, defaultValue,
+			true /*!m_globalSettings[key]*/);
+}
+
+std::string LDVHtmlInventory::getStringSetting(
+	const char *key,
+	const char *defaultValue /*= NULL*/,
+	bool isPath /*= false*/)
+{
+	char *tmpString;
+	std::string result;
+
+	if (isPath)
+	{
+		tmpString = TCUserDefaults::pathForKey(key, defaultValue,
+			true /*!m_globalSettings[key]*/);
+	}
+	else
+	{
+		tmpString = TCUserDefaults::stringForKey(key, defaultValue,
+			true /*!m_globalSettings[key]*/);
+	}
+	if (tmpString)
+	{
+		result = tmpString;
+		delete[] tmpString;
+	}
+	return result;
+}
+
+// *** Settings Flags End ***
+
+FILE *LDVHtmlInventory::safeOpenCssFile(const std::string &cssFilename,
+									   bool &match)
+{
+	FILE *cssFile = ucfopen(cssFilename.c_str(), "r");
+
+	match = false;
+	if (cssFile)
+	{
+		size_t headerSize = strlen(sm_cssHeader);
+		size_t contentSize = strlen(sm_style);
+
+		std::string fileHeader;
+		std::string fileContents;
+
+		fileHeader.resize(headerSize);
+		fileContents.resize(contentSize);
+		if (fread(&fileHeader[0], headerSize, 1, cssFile) == 1 &&
+			fread(&fileContents[0], contentSize, 1, cssFile) == 1 &&
+			fileHeader == sm_cssHeader &&
+			fileContents == sm_style)
+		{
+			TCByte test;
+
+			if (fread(&test, 1, 1, cssFile) == 0)
+			{
+				match = true;
+			}
+		}
+		fclose(cssFile);
+		return nullptr;
+	}
+	return ucfopen(cssFilename.c_str(), "w");
+}
+
+bool LDVHtmlInventory::writeExternalCss(void)
+{
+	if (m_externalCss)
+	{
+		std::string cssFilename = m_lastSavePath + "/" + sm_cssFilename;
+		bool match;
+		FILE *cssFile = safeOpenCssFile(cssFilename, match);
+
+		if (cssFile)
+		{
+			fprintf(cssFile, "%s", sm_cssHeader);
+			fprintf(cssFile, "%s", sm_style);
+			fclose(cssFile);
+		}
+		if (cssFile || match)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void LDVHtmlInventory::writeHeader(FILE *file)
+{
+	//unsigned char utf8Signature[3] = { 0xEF, 0xBB, 0xBF };
+	//fwrite(utf8Signature, 3, 1, file);
+	fprintf(file, "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\" "
+		"\"http://www.w3.org/TR/html4/strict.dtd\">\n");
+	fprintf(file, "<html>\n");
+	fprintf(file, "<head>\n");
+	fprintf(file, "<meta http-equiv=\"Content-Type\" "
+		"content=\"text/html; charset=UTF-8\">\n");
+	fprintf(file, "<link rel=\"icon\" href=\""
+		"https://trevorsandy.github.io/lpub3d/favicon.ico\">\n");
+	char title[1024];
+	sprintf(title, lsUtf8("PLTitle"), m_modelName.c_str());
+	fprintf(file, "<title>%s</title>\n", title);
+	if (writeExternalCss())
+	{
+		fprintf(file, "<link href=\"%s\" title=\"%s\" "
+			"rel=\"stylesheet\" type=\"text/css\">\n", sm_cssFilename,
+			lsUtf8("PLStyleSheetTitle"));
+	}
+	else
+	{
+		fprintf(file, "<style type=\"text/css\" title=\"%s\"><!--\n",
+			lsUtf8("PLStyleSheetTitle"));
+		fprintf(file, "%s", sm_style);
+		fprintf(file, "--></style>\n");
+	}
+	fprintf(file, "<script type=\"text/javascript\">\n");
+	fprintf(file, "%s", sm_script);
+	fprintf(file, "</script>\n");
+	fprintf(file, "</head>\n");
+	fprintf(file, "<body onload=\"initializeGlobals()\">\n");
+	fprintf(file, "<div>\n");
+}
+
+void LDVHtmlInventory::writeFooter(FILE *file)
+{
+	fprintf(file, "</div>\n");
+	fprintf(file, "</body>\n");
+	fprintf(file, "</html>\n");
+}
+
+void LDVHtmlInventory::writePartHeaderCell(FILE *file)
+{
+	int colSpan = 2;
+
+	if (!m_partImages)
+	{
+		colSpan = 1;
+	}
+	writeHeaderCell(file, LDVPLCPart, colSpan);
+}
+
+void LDVHtmlInventory::writeHeaderCell(
+	FILE *file,
+	LDVPartListColumn column,
+	int colSpan)
+{
+	std::string utf8ColumnName;
+	ucstringtoutf8(utf8ColumnName, getColumnNameUC(column));
+	std::string className;
+	switch (column)
+	{
+	case LDVPLCPart:
+		className = "image";
+	break;
+	case LDVPLCDescription:
+		className = "partdesc";
+	break;
+	case LDVPLCColor:
+		className = "colorNumber";
+	break;
+	case LDVPLCElement:
+		className = "elementid";
+	break;
+	case LDVPLCQuantity:
+		className = "quantity";
+	break;
+	}
+
+	if (colSpan == 1)
+	{
+		fprintf(file, "			<th class=\"%s\">\n", className.c_str());
+		fprintf(file, "				<a class=\"header\" href=\"javascript:sort('%s', 'content-table');\" >%s</a>\n",
+									className.c_str(), utf8ColumnName.c_str());
+		fprintf(file, "				<button class=\"btn\" title=\"Sort Ascending\" onclick=\"javascript:sortDirection(true, '%s');\">I</button>\n",
+									className.c_str());
+		fprintf(file, "			</th>\n");
+	}
+	else
+	{
+		if (column == LDVPLCPart) {
+			fprintf(file, "			<th class=\"%s\" colspan=\"%d\">\n", className.c_str(), colSpan);
+			fprintf(file, "				<a class=\"header\" href=\"javascript:sort('%s', 'content-table');\" >%s</a>\n",
+										className.c_str(), utf8ColumnName.c_str());
+			fprintf(file, "				<button class=\"btn\" title=\"Sort Ascending\" onclick=\"javascript:sortDirection(true, '%s');\">I</button>\n",
+										className.c_str());
+			fprintf(file, "				<a class=\"header\" href=\"javascript:sort('partnum', 'content-table');\" >Number</a>\n");
+			fprintf(file, "				<button class=\"btn\" title=\"Sort Ascending\" onclick=\"javascript:sortDirection(true, 'partnum');\">I</button>\n");
+			fprintf(file, "			</th>\n");
+		} else
+		if (column == LDVPLCColor) {
+			fprintf(file, "			<th class=\"%s\" colspan=\"%d\">\n", className.c_str(), colSpan);
+			fprintf(file, "				<a class=\"header\" href=\"javascript:sort('%s', 'content-table');\" >%s</a>\n",
+										className.c_str(), utf8ColumnName.c_str());
+			fprintf(file, "				<button class=\"btn\" title=\"Sort Ascending\" onclick=\"javascript:sortDirection(true, '%s');\">I</button>\n",
+										className.c_str());
+			fprintf(file, "				<a class=\"header\" href=\"javascript:sort('colorprops', 'content-table');\" >Name</a>\n");
+			fprintf(file, "				<button class=\"btn\" title=\"Sort Ascending\" onclick=\"javascript:sortDirection(true, 'colorprops');\">I</button>\n");
+			fprintf(file, "			</th>\n");
+		} else {
+			fprintf(file, "			<th class=\"%s\" colspan=\"%d\">\n", className.c_str(), colSpan);
+			fprintf(file, "				<a class=\"header\" href=\"javascript:sort('%s', 'content-table');\" >%s</a>\n",
+										className.c_str(), utf8ColumnName.c_str());
+			fprintf(file, "				<button class=\"btn\" title=\"Sort Ascending\" onclick=\"javascript:sortDirection(true, '%s');\">I</button>\n",
+										className.c_str());
+			fprintf(file, "			</th>\n");
+		}
+	}
+}
+
+void LDVHtmlInventory::writeHeaderCell(FILE *file, LDVPartListColumn column)
+{
+	switch (column)
+	{
+	case LDVPLCPart:
+		writePartHeaderCell(file);
+		break;
+	case LDVPLCDescription:
+		writeHeaderCell(file, LDVPLCDescription, 1);
+		break;
+	case LDVPLCColor:
+		writeHeaderCell(file, LDVPLCColor, 2);
+		break;
+	case LDVPLCElement:
+		writeHeaderCell(file, LDVPLCElement, 1);
+		break;
+	case LDVPLCQuantity:
+		writeHeaderCell(file, LDVPLCQuantity, 1);
+		break;
+	}
+}
+
+void LDVHtmlInventory::writePartCell(
+	FILE *file,
+	const LDPartCount &partCount,
+	LDLPalette *palette,
+	const LDLColorInfo &colorInfo,
+	int colorNumber)
+{
+	std::string className;
+	std::string partName = partCount.getFilename();
+	std::string style = "";
+
+	int r, g, b, a;
+	bool element = true;
+
+	palette->getRGBA(colorInfo, r, g, b, a);
+
+	size_t nDotSpot = partName.find('.');
+	if (nDotSpot < partName.size())
+	{
+		partName = partName.substr(0, nDotSpot);
+	}
+
+	if (m_partImages)
+	{
+
+		//if (official)
+		{
+			className = " class=\"image\"";
+		}
+
+		std::string viewOnString = "";
+
+		QString elementId = Annotations::getBLElement(
+					QString::number(colorNumber),
+					QString::fromStdString(partName),
+					ElementSrc::BL);
+
+		element = !elementId.isEmpty();
+
+		style = element ? "" : " style=\"color: #FF0000;\"";
+
+		switch (m_lookupSite)
+		{
+		case LookUp::Bricklink:
+		{
+			QStringList elementParts = elementId.split("-");
+
+			fprintf(file, "			<td%s>"
+						  "<a href=\"https://www.bricklink.com/v2/catalog/catalogitem.page?P=%s&idColor=%s\">",
+					className.c_str(),
+					element ? elementParts.at(0).toLatin1().constData() : "0000",
+					element ? elementParts.at(1).toLatin1().constData() : "00");
+
+			viewOnString = lsUtf8(element ? "PLViewOnBricklink" : "PLVInvalidElement");
+		}
+			break;
+		case LookUp::Peeron:
+			fprintf(file, "			<td%s>"
+						  "<a href=\"http://peeron.com/inv/parts/%s\">",
+					className.c_str(), partName.c_str());
+
+			viewOnString = lsUtf8("PLViewOnPeeron");
+			break;
+		case LookUp::Brickset:
+		{
+			elementId = Annotations::getBLElement(
+								QString::number(colorNumber),
+								QString::fromStdString(partName),
+								ElementSrc::LEGO);
+
+			fprintf(file, "			<td%s>"
+						  "<a href=\"https://brickset.com/parts/%s/\">",
+					className.c_str(),
+					element ? elementId.toLatin1().constData() : partName.c_str());
+
+			viewOnString = lsUtf8(element ? "PLViewOnBrickset" : "PLVInvalidElement");
+		}
+			break;
+		case LookUp::Rebrickable:
+		{
+			int rebricableColor = m_modelWidget->doGetRebrickableColor(colorNumber);
+
+			std::string rebricablePartUrl = m_modelWidget->doGetRebrickablePartURL(partName);
+
+			fprintf(file, "			<td%s>"
+						  "<a href=\"%s%d/\">",
+					className.c_str(),
+					rebricablePartUrl.c_str(),
+					rebricableColor);
+
+			viewOnString = lsUtf8(element ? "PLViewOnRebrickable" : "PLVInvalidElement");
+		}
+			break;
+		case LookUp::PTracker:
+		{
+			if (partCount.getModel()->isOfficial()) {
+				fprintf(file, "			<td%s>"
+							  "<a href=\"http://www.ldraw.org/cgi-bin/ptscan.cgi?q=%s\">",
+						className.c_str(), partCount.getFilename());
+
+				viewOnString = lsUtf8("PLViewOnLDrawPartTracker");
+			} else {
+				fprintf(file, "			<td%s>"
+							  "<a href=\"http://www.ldraw.org/cgi-bin/ptdetail.cgi?f=parts/%s\">",
+						className.c_str(), partCount.getFilename());
+
+				viewOnString = lsUtf8("PLViewOnLDrawUnOffPartTracker");
+			}
+		}
+			break;
+		default:
+			break;
+		}
+
+		std::string titleString = partCount.getModel()->getDescription();
+		if (titleString.empty())
+			 titleString = lsUtf8("PLNoDescription");
+		titleString.append(" - " + viewOnString);
+
+		QString localPartPath = QDir::toNativeSeparators(QString("%1/%2_%3_%4.png")
+								.arg(Paths::partsDir)
+								.arg(QString::fromStdString(partName))
+								.arg(QString::number(colorNumber))
+								.arg(QString::fromStdString(m_partListKey)));
+								
+		if (!QFileInfo(localPartPath).exists()) {
+			localPartPath = QString(VER_LPUB3D_IMAGE_NOT_FOUND_URL);
+			titleString = lsUtf8("PLVImageNotFound") + titleString;
+		}
+
+		fprintf(file, "<img alt=\"%s\" title=\"%s\" src=\"%s\">",
+			viewOnString.c_str(), titleString.c_str(),
+			localPartPath.toLatin1().constData());
+
+		fprintf(file, "</a></td>\n");
+
+	}
+
+	fprintf(file, "			<td class=\"partnum\"%s>%s</td>\n", style.c_str(), partName.c_str());
+}
+
+void LDVHtmlInventory::writeDescriptionCell(
+	FILE *file,
+	const LDPartCount &partCount)
+{
+	if (m_columnMap[LDVPLCDescription])
+	{
+		const char *description = partCount.getModel()->getDescription();
+		if (description)
+		{
+			fprintf(file, "			<td class=\"partdesc\">%s</td>\n", description);
+		}
+		else
+		{
+			fprintf(file, "			<td class=\"partdesc\">&lt;%s&gt;</td>\n",
+				lsUtf8("PLNoDescription"));
+		}
+	}
+}
+
+void LDVHtmlInventory::writeColorCell(
+	FILE *file,
+	LDLPalette *palette,
+	const LDLColorInfo &colorInfo,
+	int colorNumber)
+{
+	int r, g, b, a;
+
+	palette->getRGBA(colorInfo, r, g, b, a);
+	if (strlen(colorInfo.name))
+	{
+		fprintf(file, "			<td class=\"colorNumber\">%d:</td>\n",
+			colorNumber);
+	}
+	else
+	{
+		if (colorNumber < 512)
+		{
+			fprintf(file, "			<td class=\"colorNumber\">%d"
+				"</td>\n", colorNumber);
+		}
+		else
+		{
+			fprintf(file, "			<td class=\"colorNumber\">#%X"
+				"</td>\n", colorNumber);
+		}
+	}
+	fprintf(file, "			<td class=\"colorprops\">\n");
+	fprintf(file, "				<table id=\"color-table\" class=\"color\">\n");
+	fprintf(file, "					<tr>\n");
+	fprintf(file, "						<td rowspan=\"2\">"
+		"%s<td>\n", colorInfo.name);
+	fprintf(file, "						<td class=\"colorBox\"><table "
+		"class=\"colorBox\"><tr><td style=\"background-color: #%02X%02X%02X\">"
+		"&nbsp;</td></tr></table></td>\n", r, g, b);
+	fprintf(file, "					</tr>\n");
+	fprintf(file, "				</table>\n");
+	fprintf(file, "			</td>\n");
+}
+
+void LDVHtmlInventory::writeElementCell(
+	FILE *file,
+	const LDPartCount &partCount,
+	int colorNumber)
+{
+	bool bl = m_lookupSite == LookUp::Bricklink;
+	std::string partName = partCount.getFilename();
+	std::string style = "";
+	size_t nDotSpot = partName.find('.');
+	if (nDotSpot < partName.size())
+	{
+		partName = partName.substr(0, nDotSpot);
+	}
+
+	QString elementId = Annotations::getBLElement(
+		QString::number(colorNumber),
+		QString::fromStdString(partName),
+		getElementSource());
+
+	if (elementId.isEmpty())
+	{
+		elementId = "Not Found";
+		style = " style=\"color: #FF0000;\"";
+	}
+
+	fprintf(file, "			<td class=\"elementid\"%s>%s</td>\n",
+		style.c_str(), elementId.toLatin1().constData());
+}
+
+void LDVHtmlInventory::writeQuantityCell(
+	FILE *file,
+	const LDPartCount &partCount,
+	int colorNumber)
+{
+	fprintf(file, "			<td class=\"quantity\">%d</td>\n",
+		partCount.getColorCount(colorNumber));
+}
+
+void LDVHtmlInventory::writeCell(
+	FILE *file, LDVPartListColumn column,
+	const LDPartCount &partCount,
+	LDLPalette *palette,
+	const LDLColorInfo &colorInfo,
+	int colorNumber)
+{
+	switch (column)
+	{
+	case LDVPLCPart:
+		writePartCell(file, partCount, palette, colorInfo, colorNumber);
+		break;
+	case LDVPLCDescription:
+		writeDescriptionCell(file, partCount);
+		break;
+	case LDVPLCColor:
+		writeColorCell(file, palette, colorInfo, colorNumber);
+		break;
+	case LDVPLCElement:
+		writeElementCell(file, partCount, colorNumber);
+		break;
+	case LDVPLCQuantity:
+		writeQuantityCell(file, partCount, colorNumber);
+		break;
+	}
+}
+
+const char *LDVHtmlInventory::getSnapshotPath(void) const
+{
+	m_snapshotPath = m_lastSavePath + "/" + getSnapshotFilename();
+	return m_snapshotPath.c_str();
+}
+
+std::string LDVHtmlInventory::getSnapshotFilename(void) const
+{
+	size_t nSpot = m_lastFilename.find_last_of('.');
+	std::string filename;
+
+	if (nSpot < m_lastFilename.size())
+	{
+		filename = m_lastFilename.substr(0, nSpot);
+	}
+	else
+	{
+		filename = m_lastFilename;
+	}
+	filename += ".png";
+	nSpot = filename.find_last_of("/\\");
+	if (nSpot < filename.size())
+	{
+		filename = filename.substr(nSpot + 1);
+	}
+	return filename;
+}
+
+void LDVHtmlInventory::writeTableHeader(
+		FILE *file,
+		int totalParts,
+		int invalidElements,
+		int uniqueElements,
+		int uniqueParts,
+		int uniqueColors)
+{
+	size_t i;
+	std::string textAlign = "right";
+
+	fprintf(file, "<table id=\"title-table\" class=\"titleImage\">\n");
+	fprintf(file, "	<tbody>\n");
+	if (m_showModel)
+	{
+		fprintf(file, "		<tr>\n");
+		fprintf(file, "			<th class=\"titleImage\" "
+			"colspan=\"%d\">\n", m_columns);
+		fprintf(file, "				<img alt=\"&lt;%s&gt;\" "
+			"title=\"&lt;%s&gt;\" src=\"%s\" "
+			"style=\"max-width:100%%;max-height:100%%;\">\n",
+			m_modelName.c_str(), m_modelName.c_str(),
+			getSnapshotFilename().c_str());
+		fprintf(file, "			</th>\n");
+		fprintf(file, "		</tr>\n");
+	}
+	fprintf(file, "		<tr>\n");
+	fprintf(file, "			<th class=\"title\" colspan=\"%d\">\n", m_columns);
+	char title[1024];
+	sprintf(title, lsUtf8("PLTitle"), m_modelName.c_str());
+	fprintf(file, "				%s", title);
+	if (m_showTotal)
+	{
+		fprintf(file, lsUtf8("PLTotalParts"), totalParts);
+	}
+	fprintf(file, "\n");
+	fprintf(file, "			</th>\n");
+	fprintf(file, "		</tr>\n");
+	if (m_showTotal)
+	{
+		fprintf(file, "		<tr>\n");
+		fprintf(file, "			<th class=\"unique\" colspan=\"%d\">\n", m_columns);
+		fprintf(file, "				<table id=\"uniqueitems-table\"  class=\"uniqueitems\">\n");
+		fprintf(file, "					<tr>\n");
+		if (invalidElements) {
+			fprintf(file, "						<th class=\"uniqueitems\" style=\"color:#FF0000;text-align:right;\">\n");
+			fprintf(file, lsUtf8("PLVInvalidElements"), invalidElements);
+			fprintf(file, "\n");
+			fprintf(file, "						</th>\n");
+			textAlign = "center";
+			fprintf(file, "						<th class=\"uniqueitems\" style=\"text-align:%s;\">\n",textAlign.c_str());
+			fprintf(file, lsUtf8("PLVUniqueElements"), uniqueElements);
+			fprintf(file, "\n");
+			fprintf(file, "						</th>\n");
+		}
+		fprintf(file, "						<th class=\"uniqueitems\" style=\"text-align:center;\">\n");
+		fprintf(file, lsUtf8("PLVUniqueParts"), uniqueParts);
+		fprintf(file, "\n");
+		fprintf(file, "						</th>\n");
+		fprintf(file, "						<th class=\"uniqueitems\" style=\"text-align:left;\">\n");
+		fprintf(file, lsUtf8("PLVUniqueColors"), uniqueColors);
+		fprintf(file, "\n");
+		fprintf(file, "						</th>\n");
+		fprintf(file, "					</tr>\n");
+		fprintf(file, "				</table>\n");
+		fprintf(file, "			</th>\n");
+		fprintf(file, "		</tr>\n");
+	}
+	fprintf(file, "	</tbody>\n");
+	fprintf(file, "</table>\n");
+	fprintf(file, "<table id=\"content-table\" class=\"contentTable\">\n");
+	fprintf(file, "	<thead>\n");
+	fprintf(file, "		<tr>\n");
+	for (i = 0; i < m_columnOrder.size(); i++)
+	{
+		writeHeaderCell(file, m_columnOrder[i]);
+	}
+	fprintf(file, "		</tr>\n");
+	fprintf(file, "	</thead>\n");
+	fprintf(file, "	<tbody>\n");
+}
+
+void LDVHtmlInventory::writeTableFooter(FILE *file)
+{
+	const char *ldviewCreditAlign = "left";
+	fprintf(file, "	</tbody>\n");
+	fprintf(file, "</table>\n");
+	fprintf(file, "<table id=\"credits-table\" class=\"credits\">\n");
+	fprintf(file, "	  <tbody>\n");
+	fprintf(file, "		<tr>\n");
+	if (!m_partImages)
+	{
+		ldviewCreditAlign = "center";
+	}
+	fprintf(file, "			<td class=\"credits\" align=\"%s\">\n",
+			ldviewCreditAlign);
+	fprintf(file, "				%s\n", lsUtf8("PLVGeneratedBy"));
+	fprintf(file, "			</td>\n");
+	if (m_partImages)
+	{
+		std::string lookupSite = "";
+		fprintf(file, "			<td class=\"credits\" align=\"right\">\n");
+		fprintf(file, "				%s ", lsUtf8("PLVProvidedBy"));
+		switch (m_lookupSite)
+		{
+		case LookUp::Bricklink:
+			fprintf(file, "%s<a href=\"https://www.bricklink.com/\"> Bricklink.com</a>.\n",
+					lsUtf8("PLVLookupSite"));
+			break;
+		case LookUp::Peeron:
+			fprintf(file, "%s<a href=\"http://peeron.com/\"> Peeron.com</a>.\n",
+					lsUtf8("PLVLookupSite"));
+			break;
+		case LookUp::Brickset:
+			fprintf(file, "%s<a href=\"https://brickset.com/\"> Brickset.com</a>.\n",
+					lsUtf8("PLVLookupSite"));
+			break;
+		case LookUp::Rebrickable:
+			fprintf(file, "%s<a href=\"https://rebrickable.com/\"> Rebrickable.com</a>.\n",
+					lsUtf8("PLVLookupSite"));
+			break;
+		case LookUp::PTracker:
+			fprintf(file, "%s<a href=\"https://http://www.ldraw.org/\"> LDraw.org</a>.\n",
+					lsUtf8("PLVLookupSite"));
+			break;
+		default:
+			break;
+		}
+		fprintf(file, "			</td>\n");
+	}
+	fprintf(file, "		</tr>\n");
+	fprintf(file, "	</tbody>\n");
+	fprintf(file, "</table>\n");
+}
+
+void LDVHtmlInventory::writePartRow(
+	FILE *file,
+	const LDPartCount &partCount,
+	LDLPalette *palette,
+	const LDLColorInfo &colorInfo,
+	int colorNumber)
+{
+	size_t i;
+
+	fprintf(file, "		<tr>\n");
+	for (i = 0; i < m_columnOrder.size(); i++)
+	{
+		writeCell(file, m_columnOrder[i], partCount, palette, colorInfo,
+			colorNumber);
+	}
+	fprintf(file, "		</tr>\n");
+}
+
+void LDVHtmlInventory::setShowModelFlag(bool value)
+{
+	m_showModel = value;
+	m_prefs->setInvShowModel(value);
+}
+
+void LDVHtmlInventory::setOverwriteSnapshotFlag(bool value)
+{
+	m_overwriteSnapshot = value;
+	m_prefs->setInvOverwriteSnapshot(value);
+}
+
+void LDVHtmlInventory::setExternalCssFlag(bool value)
+{
+	m_externalCss = value;
+	m_prefs->setInvExternalCss(value);
+}
+
+void LDVHtmlInventory::setPartImagesFlag(bool value)
+{
+	m_partImages = value;
+	m_prefs->setInvPartImages(value);
+}
+
+void LDVHtmlInventory::setShowFileFlag(bool value)
+{
+	// Note: this class doesn't actually use the flag; it just keeps track of
+	// the value and makes sure it gets saved and restored in the user defaults.
+	m_showFile = value;
+	m_prefs->setInvShowFile(value);
+}
+
+void LDVHtmlInventory::setShowTotalFlag(bool value)
+{
+	m_showTotal = value;
+	m_prefs->setInvShowTotal(value);
+}
+
+void LDVHtmlInventory::setColumnOrder(const LDVPartListColumnVector &value)
+{
+	LongVector columnOrder;
+	int i;
+
+	m_columnOrder = value;
+	for (i = 0; i < (int)value.size(); i++)
+	{
+		columnOrder.push_back(value[i]);
+	}
+	m_prefs->setInvColumnOrder(columnOrder);
+}
+
+bool LDVHtmlInventory::isColumnEnabled(LDVPartListColumn column)
+{
+	populateColumnMap();
+	return m_columnMap[column];
+}
+
+CUCSTR LDVHtmlInventory::getColumnNameUC(LDVPartListColumn column)
+{
+	switch (column)
+	{
+	case LDVPLCPart:
+		return ls(_UC("PLPartColName"));
+	case LDVPLCDescription:
+		return ls(_UC("PLDescriptionColName"));
+	case LDVPLCColor:
+		return ls(_UC("PLColorColName"));
+	case LDVPLCElement:
+		return ls(_UC("PLVElementColName"));
+	case LDVPLCQuantity:
+		return ls(_UC("PLQuantityColName"));
+	}
+	return _UC("<Unknown Column Name>");
+}
+
+const char *LDVHtmlInventory::getColumnName(LDVPartListColumn column)
+{
+	switch (column)
+	{
+	case LDVPLCPart:
+		return ls("PLPartColName");
+	case LDVPLCDescription:
+		return ls("PLDescriptionColName");
+	case LDVPLCColor:
+		return ls("PLColorColName");
+	case LDVPLCElement:
+		return ls("PLVElementColName");
+	case LDVPLCQuantity:
+		return ls("PLQuantityColName");
+	}
+	return "<Unknown Column Name>";
+}
+
+void LDVHtmlInventory::prepForSnapshot(LDrawModelViewer *modelViewer)
+{
+	TCObject::release(m_viewPoint);
+	m_viewPoint = modelViewer->saveViewPoint();
+	modelViewer->resetView();
+	modelViewer->setRotationSpeed(0);
+	modelViewer->setXYPan(0, 0);
+	modelViewer->setBackgroundRGB(0xEE, 0xEE, 0xEE);
+	modelViewer->setStereoMode(LDVStereoNone);
+}
+
+void LDVHtmlInventory::restoreAfterSnapshot(LDrawModelViewer *modelViewer)
+{
+	if (m_viewPoint)
+	{
+		modelViewer->restoreViewPoint(m_viewPoint);
+		m_viewPoint->release();
+	}
+}
+
+bool LDVHtmlInventory::isSnapshotNeeded(void) const
+{
+	if (m_showModel)
+	{
+		if (m_overwriteSnapshot)
+		{
+			return true;
+		}
+		else
+		{
+			const char *snapshotPath = getSnapshotPath();
+			FILE *pFile = ucfopen(snapshotPath, "rb");
+
+			if (pFile)
+			{
+				fclose(pFile);
+			}
+			else
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+std::string LDVHtmlInventory::defaultFilename(const char *modelFilename)
+{
+	char *filePart = filenameFromPath(modelFilename);
+	char *dirPart = directoryFromPath(modelFilename);
+	std::string htmlFilename;
+
+	if (dirPart)
+	{
+		htmlFilename = dirPart;
+		delete[] dirPart;
+		htmlFilename += '/';
+	}
+	char *findSpot = strrchr(filePart, '.');
+	if (findSpot)
+	{
+		findSpot[0] = 0;
+	}
+	htmlFilename += filePart;
+	delete[] filePart;
+	htmlFilename += ".html";
+	filePart = cleanedUpPath(htmlFilename.c_str());
+	htmlFilename = filePart;
+	delete[] filePart;
+	return htmlFilename;
+}
+
