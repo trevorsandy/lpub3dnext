@@ -3,12 +3,12 @@
 # Last Update Sep 13, 2019
 #
 # Purpose:
-# This script is used to 'cut-over' the development repository [lpub3dnext] commits to production [lpub3d].
+# This script is used to 'cut-over' the development repository [lpub3d-ci] commits to production [lpub3d].
 #
 # Setup:
 # For successful execution it must be placed at the root of the repositories, for example:
 #   ./lpub3d
-#   ./lpub3dnext
+#   ./lpub3d-ci
 #   ./ci_cutover.sh
 # GitHub API, Dropbox oauth, Sourceforge rsa keys must be placed in specific folder at the repositories root:
 #   ./Production_cutover/secrets/
@@ -21,7 +21,7 @@
 # Preq 2 of 3 Set 'Next' version number [execute once]
 # $ sed 's/2.3.13/<next version>/g' -i ci_cutover.sh
 #
-# Preq 3 of 3 create and checkout a CUTOVER branch in the lpub3dnext repository at the 
+# Preq 3 of 3 create and checkout a CUTOVER branch in the lpub3d-ci repository at the 
 #   last production commit. [execute once]
 #
 # Step 1 of 3 from the CUTOVER branch add your master/dev branch commit by executing 
@@ -34,15 +34,15 @@
 #   change [BE CAREFUL - THIS ADDS A TAG]
 # $ env MSG="LPub3D v2.3.13" TAG=v2.3.13 RELEASE=yes REV=no CNT=yes OBS_CFG=yes ./ci_cutover.sh
 #
-# Step 4 of 5 Copy README.txt and RELEASE_NOTES.html from 'lpub3d' back to 'lpub3dnext'
-# $ cp -f lpub3d/mainApp/docs/README.txt lpub3dnext/mainApp/docs/
-# $ cp -f lpub3d/mainApp/docs/RELEASE_NOTES.html lpub3dnext/mainApp/docs/
+# Step 4 of 5 Copy README.txt and RELEASE_NOTES.html from 'lpub3d' back to 'lpub3d-ci'
+# $ cp -f lpub3d/mainApp/docs/README.txt lpub3d-ci/mainApp/docs/
+# $ cp -f lpub3d/mainApp/docs/RELEASE_NOTES.html lpub3d-ci/mainApp/docs/
 #
 # Execution sequence:
-#   - copy lpub3dnext content to lpub3d folder
+#   - copy lpub3d-ci content to lpub3d folder
 #   - preserve lpub3d git database
-#   - rename all files with 'lpub3dnext' in the name to 'lpub3d'
-#   - change all occurrences of 'lpub3dnext' to 'lpub3d'
+#   - rename all files with 'lpub3d-ci' in the name to 'lpub3d'
+#   - change all occurrences of 'lpub3d-ci' to 'lpub3d'
 #   - update README.md Title - remove or change ' - Dev, CI, and Test'
 #   - create pre-commit githook
 #   - create .secrets.tar.unc file
@@ -78,7 +78,7 @@ INC_REVISION=${REV:-yes}
 INC_COUNT=${CNT:-yes}
 FORCE_CONFIG=${OBS_CFG:-no}
 TO_NAME=${GIT_NAME:-lpub3d}
-FROM_NAME=${DEV_NAME:-lpub3dnext}
+FROM_NAME=${DEV_NAME:-lpub3d-ci}
 RELEASE_COMMIT=${RELEASE:-no}
 COMMIT_MSG="${MSG:-LPub3D ${TAG}}"
 
@@ -306,6 +306,7 @@ if [ "$RELEASE_COMMIT" = "no" ]; then
    echo "18-Delete local tag"
    git tag --delete $LOCAL_TAG
    rm -f update-config-files.sh.log
+   cd $HOME_DIR
 else
    echo "18-Create local tag in $FROM_NAME repository" 
    cd ../$FROM_NAME
@@ -313,9 +314,7 @@ else
    git tag -a $LOCAL_TAG -m "LPub3D $(date +%d.%m.%Y)" && \
    git_tag="$(git tag -l -n $LOCAL_TAG)" && \
    [ -n "$git_tag" ] && echo " -git tag $git_tag created."
+   cd $HOME_DIR
 fi
 
-cd $HOME_DIR
-
 echo "Finished - COMMIT_MSG...$COMMIT_MSG" && echo
-

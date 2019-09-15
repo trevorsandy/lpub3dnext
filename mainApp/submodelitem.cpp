@@ -181,16 +181,12 @@ int SubModel::createSubModelImage(
   QPixmap  *pixmap)
 {
   int rc = 0;
-  float modelScale = 1.0f;
-  if (Preferences::usingNativeRenderer) {
-      modelScale = subModelMeta.cameraDistNative.factor.value();
-  } else {
-      modelScale = subModelMeta.modelScale.value();
-  }
+  float modelScale = subModelMeta.modelScale.value();
   int stepNumber = subModelMeta.showStepNum.value() ?
                    subModelMeta.showStepNum.value() : 1;
   QString unitsName = resolutionType() ? "DPI" : "DPCM";
   bool noCA = subModelMeta.rotStep.value().type == "ABS";
+  float camDistance = subModelMeta.cameraDistance.value();
 
   // assemble name key - create unique file when a value that impacts the image changes
   QString keyPart1 = QString("%1").arg(partialKey); /*baseName + @submodel + colour (0) */
@@ -312,13 +308,22 @@ int SubModel::createSubModelImage(
       // set viewer display options
       viewerOptions.ViewerCsiKey   = viewerCsiKey;
       viewerOptions.ImageFileName  = imageName;
+      viewerOptions.Resolution     = resolution();
+      viewerOptions.PageWidth      = pageSizeP(meta, 0);
+      viewerOptions.PageHeight     = pageSizeP(meta, 1);
       viewerOptions.UsingViewpoint = gApplication->mPreferences.mNativeViewpoint <= 6;
+      viewerOptions.RotStepType    = subModelMeta.rotStep.value().type;
+      viewerOptions.RotStep        = xyzVector(float(subModelMeta.rotStep.value().rots[0]),float(subModelMeta.rotStep.value().rots[1]),float(subModelMeta.rotStep.value().rots[2]));
       viewerOptions.FoV            = subModelMeta.cameraFoV.value();
-      viewerOptions.CameraDistance = subModelMeta.cameraDistNative.factor.value();
       viewerOptions.ZNear          = subModelMeta.znear.value();
       viewerOptions.ZFar           = subModelMeta.zfar.value();
+      viewerOptions.CameraName     = subModelMeta.cameraName.value();
+      viewerOptions.NativeCDF      = meta->LPub.nativeCD.factor.value();
+      viewerOptions.CameraDistance = camDistance > 0 ? camDistance : renderer->ViewerCameraDistance(*meta,subModelMeta.modelScale.value());
       viewerOptions.Latitude       = noCA ? 0.0 : subModelMeta.cameraAngles.value(0);
       viewerOptions.Longitude      = noCA ? 0.0 : subModelMeta.cameraAngles.value(1);
+      viewerOptions.ModelScale     = subModelMeta.modelScale.value();
+      viewerOptions.Target         = xyzVector(subModelMeta.target.x(),subModelMeta.target.y(),subModelMeta.target.z());
   }
 
   // Generate and renderer Submodel file
@@ -1400,21 +1405,15 @@ void SubModelBackgroundItem::contextMenuEvent(
 
     PlacementData placementData = subModel->placement.value();
     whatsThis = commonMenus.naturalLanguagePlacementWhatsThis(SubModelType,placementData,pl);
-    QAction *cameraDistFactorAction = nullptr;
-    QAction *scaleAction = nullptr;
-    if (Preferences::usingNativeRenderer){
-        cameraDistFactorAction  = commonMenus.cameraDistFactorrMenu(menu, pl);
-    } else {
-        scaleAction             = commonMenus.scaleMenu(menu, pl);
-    }
+    QAction *cameraAnglesAction  = commonMenus.cameraAnglesMenu(menu,pl);
+    QAction *scaleAction         = commonMenus.scaleMenu(menu, pl);
+    QAction *cameraFoVAction     = commonMenus.cameraFoVMenu(menu,pl);
     QAction *placementAction     = commonMenus.placementMenu(menu, pl, whatsThis);
     QAction *backgroundAction    = commonMenus.backgroundMenu(menu,pl);
     QAction *borderAction        = commonMenus.borderMenu(menu,pl);
     QAction *marginAction        = commonMenus.marginMenu(menu,pl);
     QAction *subModelColorAction = commonMenus.subModelColorMenu(menu,pl);
     QAction *rotStepAction       = commonMenus.rotStepMenu(menu,pl);
-    QAction *cameraFoVAction     = commonMenus.cameraFoVMenu(menu,pl);
-    QAction *cameraAnglesAction  = commonMenus.cameraAnglesMenu(menu,pl);
     QAction *hideAction          = commonMenus.hideMenu(menu,pl);
 
     QAction *povrayRendererArgumentsAction = nullptr;
@@ -1506,12 +1505,6 @@ void SubModelBackgroundItem::contextMenuEvent(
                          top,
                          bottom,
                          &subModel->subModelMeta.subModelColor);
-    } else if (selectedAction == cameraDistFactorAction) {
-        changeCameraDistFactor(pl+" Camera Distance",
-                               "Native Camera Distance",
-                               top,
-                               bottom,
-                               &subModel->subModelMeta.cameraDistNative.factor);
     } else if (selectedAction == scaleAction){
           changeFloatSpin(pl+" Scale",
                           "Model Size",

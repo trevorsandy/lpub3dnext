@@ -148,9 +148,12 @@ Step::Step(
       csiCameraMeta.cameraAngles     = _meta.LPub.assem.cameraAngles;
       csiCameraMeta.modelScale       = _meta.LPub.assem.modelScale;
       csiCameraMeta.cameraDistNative = _meta.LPub.assem.cameraDistNative;
+      csiCameraMeta.cameraName       = _meta.LPub.assem.cameraName;
       csiCameraMeta.cameraFoV        = _meta.LPub.assem.cameraFoV;
+      csiCameraMeta.isOrtho          = _meta.LPub.assem.isOrtho;
       csiCameraMeta.zfar             = _meta.LPub.assem.zfar;
       csiCameraMeta.znear            = _meta.LPub.assem.znear;
+      csiCameraMeta.target           = _meta.LPub.assem.target;
     }
   pli.steps                 = grandparent();
   pli.step                  = this;
@@ -230,8 +233,8 @@ int Step::createCsi(
                           csiCameraMeta.cameraAngles.value(1));
   float cameraFoV       = csiCameraMeta.cameraFoV.value();
   float modelScale      = csiCameraMeta.modelScale.value();
+  float camDistance     = csiCameraMeta.cameraDistance.value();
   if (nativeRenderer) {
-    modelScale          = csiCameraMeta.cameraDistNative.factor.value();
     nType = calledOut ? NTypeCalledOut : multiStep ? NTypeMultiStep : NTypeDefault;
   }
   QString csi_Name      = modelDisplayOnlyStep ? csiName()+"_fm" : bfxLoad ? csiName()+"_bfx" : csiName();
@@ -384,13 +387,17 @@ int Step::createCsi(
 
      if (!renderer->useLDViewSCall() && ! gui->m_partListCSIFile) {
          showStatus = true;
+
          // set camera
-         meta.LPub.assem.cameraAngles            = csiCameraMeta.cameraAngles;
-         meta.LPub.assem.cameraDistNative.factor = csiCameraMeta.cameraDistNative.factor;
-         meta.LPub.assem.modelScale              = csiCameraMeta.modelScale;
-         meta.LPub.assem.cameraFoV               = csiCameraMeta.cameraFoV;
-         meta.LPub.assem.zfar                    = csiCameraMeta.zfar;
-         meta.LPub.assem.znear                   = csiCameraMeta.znear;
+         meta.LPub.assem.cameraAngles   = csiCameraMeta.cameraAngles;
+         meta.LPub.assem.cameraDistance = csiCameraMeta.cameraDistance;
+         meta.LPub.assem.modelScale     = csiCameraMeta.modelScale;
+         meta.LPub.assem.cameraFoV      = csiCameraMeta.cameraFoV;
+         meta.LPub.assem.isOrtho        = csiCameraMeta.isOrtho;
+         meta.LPub.assem.zfar           = csiCameraMeta.zfar;
+         meta.LPub.assem.znear          = csiCameraMeta.znear;
+         meta.LPub.assem.target         = csiCameraMeta.target;
+
          // set the extra renderer parms
          meta.LPub.assem.ldviewParms =
               Render::getRenderer() == RENDERER_LDVIEW ? ldviewParms :
@@ -446,13 +453,23 @@ int Step::createCsi(
       // set viewer display options
       viewerOptions.ViewerCsiKey   = viewerCsiKey;
       viewerOptions.ImageFileName  = pngName;
+      viewerOptions.Resolution     = resolution();
+      viewerOptions.PageWidth      = gui->pageSize(meta.LPub.page, 0);
+      viewerOptions.PageHeight     = gui->pageSize(meta.LPub.page, 1);
       viewerOptions.UsingViewpoint = gApplication->mPreferences.mNativeViewpoint <= 6;
+      viewerOptions.RotStepType    = meta.rotStep.value().type;
+      viewerOptions.RotStep        = xyzVector(float(meta.rotStep.value().rots[0]),float(meta.rotStep.value().rots[1]),float(meta.rotStep.value().rots[2]));
+      viewerOptions.CameraName     = csiCameraMeta.cameraName.value();
       viewerOptions.FoV            = csiCameraMeta.cameraFoV.value();
+      viewerOptions.IsOrtho        = csiCameraMeta.isOrtho.value();
       viewerOptions.ZNear          = csiCameraMeta.znear.value();
       viewerOptions.ZFar           = csiCameraMeta.zfar.value();
-      viewerOptions.CameraDistance = csiCameraMeta.cameraDistNative.factor.value();
+      viewerOptions.NativeCDF      = meta.LPub.nativeCD.factor.value();
+      viewerOptions.CameraDistance = camDistance > 0 ? camDistance : renderer->ViewerCameraDistance(meta,csiCameraMeta.modelScale.value());
       viewerOptions.Latitude       = absRotstep ? noCA.value(0) : csiCameraMeta.cameraAngles.value(0);
       viewerOptions.Longitude      = absRotstep ? noCA.value(1) : csiCameraMeta.cameraAngles.value(1);
+      viewerOptions.Target         = xyzVector(csiCameraMeta.target.x(),csiCameraMeta.target.y(),csiCameraMeta.target.z());
+      viewerOptions.ModelScale     = csiCameraMeta.modelScale.value();
 
       // Load the 3DViewer
       loadTheViewer();
@@ -859,8 +876,8 @@ const int relativePlace[NumPlacements][2] =
 void Step::maxMargin(
     MarginsMeta &margin,
     int tbl[2],
-int marginRows[][2],
-int marginCols[][2])
+    int marginRows[][2],
+    int marginCols[][2])
 {
   if (margin.valuePixels(XX) > marginCols[tbl[XX]][0]) {
       marginCols[tbl[XX]][0] = margin.valuePixels(XX);

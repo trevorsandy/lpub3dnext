@@ -336,6 +336,9 @@ public:
 	void SetCameraZNear(lcCamera* Camera, float ZNear);
 	void SetCameraZFar(lcCamera* Camera, float ZFar);
 	void SetCameraName(lcCamera* Camera, const char* Name);
+/*** LPub3D Mod - Camera Globe ***/
+	void SetCameraGlobe(lcCamera* Camera, float Latitude, float Longitude, float Distance);
+/*** LPub3D Mod end ***/
 
 	void ShowPropertiesDialog();
 	void ShowSelectByNameDialog();
@@ -382,8 +385,8 @@ protected:
 	Q_DECLARE_TR_FUNCTIONS(lcModel);
 /*** LPub3D Mod - Expose Model to LPub3D ***/
 	friend class Render;
-    friend class Gui;
-    friend class Step;
+	friend class Gui;
+	friend class Step;
 /*** LPub3D Mod end ***/
 };
 

@@ -257,7 +257,6 @@ Highlighter::Highlighter(QTextDocument *parent)
 
     QStringList LPubBodyMetaPatterns;
     LPubBodyMetaPatterns
-    << "\\ASSEM_PART\\b"
     << "\\bAFTER\\b"
     << "\\bALLOC\\b"
     << "\\bANNOTATE\\b"
@@ -268,6 +267,7 @@ Highlighter::Highlighter(QTextDocument *parent)
     << "\\bAREA\\b"
     << "\\bASPECT\\b"
     << "\\bASSEM\\b"
+    << "\\bASSEM_PART\\b"
     << "\\bAT_MODEL\\b"
     << "\\bAT_STEP\\b"
     << "\\bAT_TOP\\b"

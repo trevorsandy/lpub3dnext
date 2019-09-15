@@ -152,23 +152,15 @@ GlobalPliDialog::GlobalPliDialog(
   vlayout->addWidget(box);
   box->setLayout(childlayout);
 
-  // Scale/Native Camera Distance Factor
-  if (Preferences::usingNativeRenderer) {
-      child = new CameraDistFactorGui("Camera Distance Factor",
-                                      &pliMeta->cameraDistNative);
-      data->children.append(child);
-      data->clearCache = child->modified;
-      childlayout->addWidget(child);
-  } else {
-      child = new DoubleSpinGui("Scale",
-                                &pliMeta->modelScale,
-                                pliMeta->modelScale._min,
-                                pliMeta->modelScale._max,
-                                float(0.01));
-      data->children.append(child);
-      data->clearCache = child->modified;
-      childlayout->addWidget(child);
-  }
+  // Scale
+  child = new DoubleSpinGui("Scale",
+                            &pliMeta->modelScale,
+                            pliMeta->modelScale._min,
+                            pliMeta->modelScale._max,
+                            float(0.01));
+  data->children.append(child);
+  data->clearCache = child->modified;
+  childlayout->addWidget(child);
 
   child = new UnitsGui("Margins L/R|T/B",&pliMeta->part.margin);
   data->children.append(child);

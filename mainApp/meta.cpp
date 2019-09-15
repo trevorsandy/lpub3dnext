@@ -95,7 +95,7 @@ Rc BranchMeta::parse(QStringList &argv, int index, Where &here)
 //        int size = argv.size();
 //        int incr = i;
 //        int result = size - incr;
-//        logNotice() << QString("LINE ARGV Pos:(%1), PosIndex:(%2) [%3 - %4 = %5], Value:(%6)")
+//        logDebug() << QString("LINE ARGV Pos:(%1), PosIndex:(%2) [%3 - %4 = %5], Value:(%6)")
 //                       .arg(i+1).arg(i).arg(size).arg(incr).arg(result).arg(argv[i]);
 //    }
 //    debugLine << QString(", Index (%7)[%8], LineNum (%9), ModelName (%10)")
@@ -126,7 +126,8 @@ Rc BranchMeta::parse(QStringList &argv, int index, Where &here)
 #ifdef QT_DEBUG_MODE
 //                  QString iVal = QString("argv[index+offset] (%1) [Index: %2, Offset: %3]")
 //                                         .arg(argv[index+offset]).arg(index).arg(offset);
-//                  logTrace() << "I.value():" << &i.value() << iVal;
+//                  logTrace() << "I.value():" << &i.value() << iVal
+//                                ;
 #endif
                   if (argv[index+offset] == "LOCAL") {
                       i.value()->pushed = true;
@@ -416,6 +417,58 @@ void FloatPairMeta::doc(QStringList &out, QString preamble)
 }
 
 /* ------------------ */
+
+void FloatXYZMeta::init(
+    BranchMeta *parent,
+    const QString name,
+    Rc _rc)
+{
+  AbstractMeta::init(parent,name);
+  rc = _rc;
+}
+Rc FloatXYZMeta::parse(QStringList &argv, int index,Where &here)
+{
+  if (argv.size() - index == 3) {
+      bool ok[3];
+      float x = argv[index  ].toFloat(&ok[0]);
+      float y = argv[index+1].toFloat(&ok[1]);
+      float z = argv[index+2].toFloat(&ok[2]);
+      if (ok[0] && ok[1] && ok[2]) {
+          if (x < _min || x > _max ||
+              y < _min || y > _max ||
+              z < _min || z > _max) {
+              return RangeErrorRc;
+            }
+          _x[pushed] = x;
+          _y[pushed] = y;
+          _z[pushed] = z;
+          _here[pushed] = here;
+          _populated    = true;
+          return rc;
+        }
+    }
+
+  if (reportErrors) {
+       emit gui->messageSig(LOG_ERROR,QMessageBox::tr("Expected three floating point numbers but got \"%1\" %2") .arg(argv[index]) .arg(argv.join(" ")));
+    }
+
+  return FailureRc;
+}
+QString FloatXYZMeta::format(bool local, bool global)
+{
+  QString foo = QString("%1 %2 %3")
+      .arg(double(_x[pushed]),_fieldWidth,'f',_precision)
+      .arg(double(_y[pushed]),_fieldWidth,'f',_precision)
+      .arg(double(_z[pushed]),_fieldWidth,'f',_precision);
+  return LeafMeta::format(local,global,foo);
+}
+void FloatXYZMeta::doc(QStringList &out, QString preamble)
+{
+  out << preamble + " <float x> <float y> <float z>";
+}
+
+/* ------------------ */
+
 void StringMeta::init(
     BranchMeta *parent,
     QString name,
@@ -2816,9 +2869,9 @@ void ArrowEndMeta::doc(QStringList &out, QString preamble)
   out << preamble + "(SQUARE|ROUND)";
 }
 
-/* ------------------ */ 
+/* ------------------ */
 
-CalloutCsiMeta::CalloutCsiMeta() : BranchMeta()
+SettingsMeta::SettingsMeta() : BranchMeta()
 {
   // assem image generation
   modelScale.setRange(-10000.0,10000.0);
@@ -2829,30 +2882,34 @@ CalloutCsiMeta::CalloutCsiMeta() : BranchMeta()
   cameraAngles.setFormats(7,4,"###9.90");
   cameraAngles.setRange(-360.0,360.0);
   cameraAngles.setValues(23,45);                   // using LPub3D Default 0.0,0.0f
-  cameraDistNative.factor.setRange(-5000,5000);
-  cameraDistNative.factor.setValue(Preferences::cameraDistFactorNative);
+  cameraDistance.setRange(1.0f,FLT_MAX);
   cameraFoV.setFormats(5,4,"9.999");
   cameraFoV.setRange(gui->getDefaultFOVMinRange(),
                      gui->getDefaultFOVMaxRange());
   cameraFoV.setValue(gui->getDefaultCameraFoV());
+  znear.setRange(1.0f,FLT_MAX);
   znear.setValue(gui->getDefaultCameraZNear());
+  zfar.setRange(1.0f,FLT_MAX);
   zfar.setValue(gui->getDefaultCameraZFar());
+  isOrtho.setValue(false);
 }
 
-void CalloutCsiMeta::init(BranchMeta *parent, QString name)
+void SettingsMeta::init(BranchMeta *parent, QString name)
 {
   AbstractMeta::init(parent, name);
-  placement.init(this,"PLACEMENT");
-  margin.init   (this,"MARGINS");
-
+  placement.init        (this,"PLACEMENT");
+  margin.init           (this,"MARGINS");
   // assem image scale
   modelScale.init       (this,"MODEL_SCALE");
   // assem native camera position
-  cameraDistNative.init (this,"CAMERA_DISTANCE_NATIVE");
+  cameraDistance.init   (this,"CAMERA_DISTANCE");
   cameraFoV.init        (this,"CAMERA_FOV");
   cameraAngles.init     (this,"CAMERA_ANGLES");
   znear.init            (this,"CAMERA_ZNEAR");
   zfar.init             (this,"CAMERA_ZFAR");
+  isOrtho.init          (this,"CAMERA_ORTHOGRAPHIC");
+  cameraName.init       (this,"CAMERA_NAME");
+  target.init           (this,"CAMERA_TARGET");
 }
 
 /* ------------------ */ 
@@ -3142,13 +3199,13 @@ void HighlightStepMeta::init(
  * Native Camera Distance Factor Meta
  */
 
-CameraDistFactorMeta::CameraDistFactorMeta() : BranchMeta()
+NativeCDMeta::NativeCDMeta() : BranchMeta()
 {
+    factor.setRange(-5000,5000);
     factor.setValue(Preferences::cameraDistFactorNative);
 }
 
-
-void CameraDistFactorMeta::init(
+void NativeCDMeta::init(
     BranchMeta *parent,
     QString name)
 {
@@ -3704,21 +3761,16 @@ SubModelMeta::SubModelMeta() : PliMeta()
   cameraAngles.setFormats(7,4,"###9.90");
   cameraAngles.setRange(-360.0,360.0);
   cameraAngles.setValues(23,-45);
-  cameraDistNative.factor.setRange(-5000,5000);
-  cameraDistNative.factor.setValue(Preferences::cameraDistFactorNative);
+  cameraDistance.setRange(1.0f,FLT_MAX);
   cameraFoV.setFormats(5,4,"9.999");
   cameraFoV.setRange(gui->getDefaultFOVMinRange(),
                      gui->getDefaultFOVMaxRange());
   cameraFoV.setValue(gui->getDefaultCameraFoV());
+  znear.setRange(1.0f,FLT_MAX);
   znear.setValue(gui->getDefaultCameraZNear());
+  zfar.setRange(1.0f,FLT_MAX);
   zfar.setValue(gui->getDefaultCameraZFar());
-
-  // image display
-  v_cameraFoV.setFormats(5,4,"9.999");
-  v_cameraFoV.setRange(0.0,360.0);
-  v_cameraFoV.setValue(CAMERA_FOV_NATIVE_DEFAULT);
-  v_znear.setValue(CAMERA_ZNEAR_NATIVE_DEFAULT);
-  v_zfar.setValue(CAMERA_ZFAR_NATIVE_DEFAULT);
+  isOrtho.setValue(false);
 
   // movable pli part groups
   enablePliPartGroup.setValue(false);
@@ -3745,16 +3797,11 @@ void SubModelMeta::init(BranchMeta *parent, QString name)
   subModelColor        .init(this,"SUBMODEL_BACKGROUND_COLOR");
   part                 .init(this,"PART");
   rotStep              .init(this,"SUBMODEL_ROTATION");
-  cameraDistNative     .init(this,"CAMERA_DISTANCE_NATIVE");
   cameraFoV            .init(this,"CAMERA_FOV");
   cameraAngles         .init(this,"CAMERA_ANGLES");
-  distance             .init(this,"CAMERA_DISTANCE");
+  cameraDistance       .init(this,"CAMERA_DISTANCE");
   znear                .init(this,"CAMERA_ZNEAR");
   zfar                 .init(this,"CAMERA_ZFAR");
-  v_cameraFoV          .init(this,"VIEWER_CAMERA_FOV");
-  v_distance           .init(this,"VIEWER_CAMERA_DISTANCE");
-  v_znear              .init(this,"VIEWER_CAMERA_ZNEAR");
-  v_zfar               .init(this,"VIEWER_CAMERA_ZFAR");
 }
 
 /* ------------------ */
@@ -4125,21 +4172,16 @@ AssemMeta::AssemMeta() : BranchMeta()
   cameraAngles.setFormats(7,4,"###9.90");
   cameraAngles.setRange(-360.0,360.0);
   cameraAngles.setValues(23,45);                   // using LPub3D Default 0.0,0.0f
-  cameraDistNative.factor.setRange(-5000,5000);
-  cameraDistNative.factor.setValue(Preferences::cameraDistFactorNative);
+  cameraDistance.setRange(1.0f,FLT_MAX);
   cameraFoV.setFormats(5,4,"9.999");
   cameraFoV.setRange(gui->getDefaultFOVMinRange(),
                      gui->getDefaultFOVMaxRange());
   cameraFoV.setValue(gui->getDefaultCameraFoV());
+  znear.setRange(1.0f,FLT_MAX);
   znear.setValue(gui->getDefaultCameraZNear());
+  zfar.setRange(1.0f,FLT_MAX);
   zfar.setValue(gui->getDefaultCameraZFar());
-
-  // image display
-  v_cameraFoV.setFormats(5,4,"9.999");
-  v_cameraFoV.setRange(0.0,360.0);
-  v_cameraFoV.setValue(CAMERA_FOV_NATIVE_DEFAULT);
-  v_znear.setValue(CAMERA_ZNEAR_NATIVE_DEFAULT);
-  v_zfar.setValue(CAMERA_ZFAR_NATIVE_DEFAULT);
+  isOrtho.setValue(false);
 }
 
 void AssemMeta::init(BranchMeta *parent, QString name)
@@ -4153,18 +4195,14 @@ void AssemMeta::init(BranchMeta *parent, QString name)
   povrayParms .init   (this,"POVRAY_PARMS");
   showStepNumber.init (this,"SHOW_STEP_NUMBER");
   annotation.init     (this,"ANNOTATION");
-
-  cameraDistNative.init (this,"CAMERA_DISTANCE_NATIVE");
   cameraFoV.init        (this,"CAMERA_FOV");
   cameraAngles.init     (this,"CAMERA_ANGLES");
-  distance.init         (this,"CAMERA_DISTANCE");
+  cameraDistance.init   (this,"CAMERA_DISTANCE");
   znear.init            (this,"CAMERA_ZNEAR");
   zfar.init             (this,"CAMERA_ZFAR");
-
-  v_cameraFoV.init     (this,"VIEWER_CAMERA_FOV");
-  v_distance.init      (this,"VIEWER_CAMERA_DISTANCE");
-  v_znear.init         (this,"VIEWER_CAMERA_ZNEAR");
-  v_zfar.init          (this,"VIEWER_CAMERA_ZFAR");
+  isOrtho.init          (this,"CAMERA_ORTHOGRAPHIC");
+  cameraName.init       (this,"CAMERA_NAME");
+  target.init           (this,"CAMERA_TARGET");
 }
 
 /* ------------------ */
@@ -4232,21 +4270,16 @@ PliMeta::PliMeta() : BranchMeta()
   cameraAngles.setFormats(7,4,"###9.90");
   cameraAngles.setRange(-360.0,360.0);
   cameraAngles.setValues(23,-45);
-  cameraDistNative.factor.setRange(-5000,5000);
-  cameraDistNative.factor.setValue(Preferences::cameraDistFactorNative);
+  cameraDistance.setRange(1.0f,FLT_MAX);
   cameraFoV.setFormats(5,4,"9.999");
   cameraFoV.setRange(gui->getDefaultFOVMinRange(),
                      gui->getDefaultFOVMaxRange());
   cameraFoV.setValue(gui->getDefaultCameraFoV());
+  znear.setRange(1.0f,FLT_MAX);
   znear.setValue(gui->getDefaultCameraZNear());
   zfar.setValue(gui->getDefaultCameraZFar());
-
-  // image display
-  v_cameraFoV.setFormats(5,4,"9.999");
-  v_cameraFoV.setRange(0.0,360.0);
-  v_cameraFoV.setValue(CAMERA_FOV_NATIVE_DEFAULT);
-  v_znear.setValue(CAMERA_ZNEAR_NATIVE_DEFAULT);
-  v_zfar.setValue(CAMERA_ZFAR_NATIVE_DEFAULT);
+  zfar.setRange(1.0f,FLT_MAX);
+  isOrtho.setValue(false);
 
   // movable pli part groups
   enablePliPartGroup.setValue(false);
@@ -4281,16 +4314,12 @@ void PliMeta::init(BranchMeta *parent, QString name)
   rectangleStyle  .init(this,"RECTANGLE_STYLE");
   circleStyle     .init(this,"CIRCLE_STYLE");
   squareStyle     .init(this,"SQUARE_STYLE");
-  cameraDistNative.init(this,"CAMERA_DISTANCE_NATIVE");
   cameraFoV       .init(this,"CAMERA_FOV");
   cameraAngles    .init(this,"CAMERA_ANGLES");
-  distance        .init(this,"CAMERA_DISTANCE");
+  cameraDistance  .init(this,"CAMERA_DISTANCE");
   znear           .init(this,"CAMERA_ZNEAR");
   zfar            .init(this,"CAMERA_ZFAR");
-  v_cameraFoV     .init(this,"VIEWER_CAMERA_FOV");
-  v_distance      .init(this,"VIEWER_CAMERA_DISTANCE");
-  v_znear         .init(this,"VIEWER_CAMERA_ZNEAR");
-  v_zfar          .init(this,"VIEWER_CAMERA_ZFAR");
+  isOrtho         .init(this,"CAMERA_ORTHOGRAPHIC");
   enablePliPartGroup .init(this,"PART_GROUP_ENABLE");
 }
 
@@ -4365,14 +4394,16 @@ BomMeta::BomMeta() : PliMeta()
   cameraAngles.setFormats(7,4,"###9.90");
   cameraAngles.setRange(-360.0,360.0);
   cameraAngles.setValues(23,-45);
-  cameraDistNative.factor.setRange(-5000,5000);
-  cameraDistNative.factor.setValue(Preferences::cameraDistFactorNative);
+  cameraDistance.setRange(1.0f,FLT_MAX);
   cameraFoV.setFormats(5,4,"9.999");
   cameraFoV.setRange(gui->getDefaultFOVMinRange(),
                      gui->getDefaultFOVMaxRange());
   cameraFoV.setValue(gui->getDefaultCameraFoV());
+  znear.setRange(1.0f,FLT_MAX);
   znear.setValue(gui->getDefaultCameraZNear());
+  zfar.setRange(1.0f,FLT_MAX);
   zfar.setValue(gui->getDefaultCameraZFar());
+  isOrtho.setValue(false);
 
   // movable pli part groups
   enablePliPartGroup.setValue(false);
@@ -4409,11 +4440,9 @@ void BomMeta::init(BranchMeta *parent, QString name)
   rectangleStyle  .init(this,"RECTANGLE_STYLE");
   circleStyle     .init(this,"CIRCLE_STYLE");
   squareStyle     .init(this,"SQUARE_STYLE");
-
-  cameraDistNative.init(this,"CAMERA_DISTANCE_NATIVE");
   cameraFoV       .init(this,"CAMERA_FOV");
   cameraAngles    .init(this,"CAMERA_ANGLES");
-  distance        .init(this,"CAMERA_DISTANCE");
+  cameraDistance  .init(this,"CAMERA_DISTANCE");
   znear           .init(this,"CAMERA_ZNEAR");
   zfar            .init(this,"CAMERA_ZFAR");
   enablePliPartGroup .init(this,"PART_GROUP_ENABLE");
@@ -4687,8 +4716,6 @@ LPubMeta::LPubMeta() : BranchMeta()
   subModel.placement.setValue(RightTopOutside,StepNumberType);
   stepNumber.placement.setValue(BottomLeftOutside,PageHeaderType);      // TopLeftInsideCorner,PageType
   stepNumber.color.setValue("black");
-  cameraDistNative.factor.setRange(-5000,5000);
-  cameraDistNative.factor.setValue(Preferences::cameraDistFactorNative);
   contModelStepNum.setRange(1,10000);
   countInstance.setValue(CountAtModel);
   contStepNumbers.setValue(false);
@@ -4717,11 +4744,11 @@ void LPubMeta::init(BranchMeta *parent, QString name)
   highlightStep            .init(this,"HIGHLIGHT_STEP");
   subModel                 .init(this,"SUBMODEL_DISPLAY");
   rotateIcon               .init(this,"ROTATE_ICON");
-  countInstance       .init(this,"CONSOLIDATE_INSTANCE_COUNT");
+  countInstance            .init(this,"CONSOLIDATE_INSTANCE_COUNT");
   contModelStepNum         .init(this,"MODEL_STEP_NUMBER");
   contStepNumbers          .init(this,"CONTINUOUS_STEP_NUMBERS");
   stepPli                  .init(this,"STEP_PLI");
-  cameraDistNative         .init(this,"CAMERA_DISTANCE_NATIVE");
+  nativeCD                 .init(this,"CAMERA_DISTANCE_NATIVE");
   reserve.setRange(0.0,1000000.0);
 }
 
@@ -5107,22 +5134,21 @@ void Meta::processSpecialCases(QString &line, Where &here){
     if (line.contains(viewAngleRx))
         line.replace(viewAngleRx.cap(1),"CAMERA_ANGLES");
 
-    // Disabled until #331 is pushed
-    // if (line.contains("CAMERA_DISTANCE_NATIVE")) {
-    //     if (gui->parsedMessages.contains(here)) {
-    //         line = "0 // IGNORED";
-    //     } else {
-    //         QRegExp typesRx("(ASSEM|PLI|BOM|SUBMODEL|LOCAL)");
-    //         if (line.contains(typesRx)) {
-    //             QString message = QString("CAMERA_DISTANCE_NATIVE meta command is no longer supported for %1 type. "
-    //                                       "Only application at GLOBAL scope is permitted. "
-    //                                       "Reclassify or remove this command and use MODEL_SCALE to implicate camera distance. "
-    //                                       "This command will be ignored. %2")
-    //                                       .arg(typesRx.cap(1))
-    //                                       .arg(line);
-    //             gui->parseError(message,here);
-    //             line = "0 // IGNORED";
-    //         }
-    //     }
-    // }
+    if (line.contains("CAMERA_DISTANCE_NATIVE")) {
+        if (gui->parsedMessages.contains(here)) {
+            line = "0 // IGNORED";
+        } else {
+            QRegExp typesRx("(ASSEM|PLI|BOM|SUBMODEL|LOCAL)");
+            if (line.contains(typesRx)) {
+                QString message = QString("CAMERA_DISTANCE_NATIVE meta command is no longer supported for %1 type. "
+                                          "Only application at GLOBAL scope is permitted. "
+                                          "Reclassify or remove this command and use MODEL_SCALE to implicate camera distance. "
+                                          "This command will be ignored. %2")
+                                          .arg(typesRx.cap(1))
+                                          .arg(line);
+                gui->parseError(message,here);
+                line = "0 // IGNORED";
+            }
+        }
+    }
 }

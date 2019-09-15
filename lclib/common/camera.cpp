@@ -9,6 +9,9 @@
 #include "camera.h"
 #include "lc_application.h"
 #include "lc_context.h"
+/*** LPub3D Mod - Camera Globe ***/
+#include "project.h"
+/*** LPub3D Mod end ***/
 
 #define LC_CAMERA_POSITION_EDGE 7.5f
 #define LC_CAMERA_TARGET_EDGE 7.5f
@@ -548,7 +551,7 @@ void lcCamera::DrawInterface(lcContext* Context, const lcScene& Scene) const
 	*CurVert++ = 0.0f; *CurVert++ = 0.0f; *CurVert++ = -Length;
 	*CurVert++ = 0.0f; *CurVert++ = 25.0f; *CurVert++ = 0.0f;
 
-	const GLushort Indices[40 + 24 + 24 + 4 + 16] = 
+	const GLushort Indices[40 + 24 + 24 + 4 + 16] =
 	{
 		0, 1, 1, 2, 2, 3, 3, 0,
 		4, 5, 5, 6, 6, 7, 7, 4,
@@ -808,7 +811,7 @@ void lcCamera::ZoomExtents(float AspectRatio, const lcVector3& Center, const lcV
 		lcVector3 Position(mPosition + Center - mTargetPosition);
 		lcMatrix44 ProjectionMatrix = lcMatrix44Perspective(m_fovy, AspectRatio, m_zNear, m_zFar);
 
-		std::tie(mPosition, std::ignore) = lcZoomExtents(Position, mWorldView, ProjectionMatrix, Points, NumPoints);
+        std::tie(mPosition, std::ignore) = lcZoomExtents(Position, mWorldView, ProjectionMatrix, Points, NumPoints);
 		mTargetPosition = Center;
 	}
 
@@ -923,7 +926,7 @@ void lcCamera::Orbit(float DistanceX, float DistanceY, const lcVector3& CenterPo
 		Z[0] = -Z[0];
 		Z[1] = -Z[1];
 	}
- 
+
 	lcMatrix44 YRot(lcVector4(Z[0], Z[1], 0.0f, 0.0f), lcVector4(-Z[1], Z[0], 0.0f, 0.0f), lcVector4(0.0f, 0.0f, 1.0f, 0.0f), lcVector4(0.0f, 0.0f, 0.0f, 1.0f));
 	lcMatrix44 transform = lcMul(lcMul(lcMul(lcMatrix44AffineInverse(YRot), lcMatrix44RotationY(DistanceY)), YRot), lcMatrix44RotationZ(-DistanceX));
 
@@ -1027,10 +1030,12 @@ void lcCamera::SetViewpoint(const lcVector3& Position)
 	UpdatePosition(1);
 }
 
-void lcCamera::SetAngles(float Latitude, float Longitude, float Distance)
+/*** LPub3D Mod - Camera Globe ***/
+void lcCamera::SetAngles(float Latitude, float Longitude, float Distance, lcVector3 Target)
 {
 	mPosition = lcVector3(0, -1, 0);
-	mTargetPosition = lcVector3(0, 0, 0);
+    mTargetPosition = Target; //lcVector3(0, 0, 0);
+/*** LPub3D Mod end ***/
 	mUpVector = lcVector3(0, 0, 1);
 
 	lcMatrix33 LongitudeMatrix = lcMatrix33RotationZ(LC_DTOR * Longitude);
@@ -1038,7 +1043,15 @@ void lcCamera::SetAngles(float Latitude, float Longitude, float Distance)
 
 	lcVector3 SideVector = lcMul(lcVector3(-1, 0, 0), LongitudeMatrix);
 	lcMatrix33 LatitudeMatrix = lcMatrix33FromAxisAngle(SideVector, LC_DTOR * Latitude);
-    mPosition = lcMul(mPosition, LatitudeMatrix) * Distance;
+
+/*** LPub3D Mod - Camera Globe ***/
+	float CameraDistance = NativeCameraDistance(Distance /*Standard Format*/,
+												lcGetActiveProject()->GetCDF(),
+												lcGetActiveProject()->GetModelWidth(),
+												lcGetActiveProject()->GetResolution(),
+												lcGetActiveProject()->GetModelScale());
+	mPosition = lcMul(mPosition, LatitudeMatrix) * CameraDistance;
+/*** LPub3D Mod end ***/
 	mUpVector = lcMul(mUpVector, LatitudeMatrix);
 
 	ChangeKey(mPositionKeys, mPosition, 1, false);
@@ -1063,5 +1076,19 @@ void lcCamera::GetAngles(float& Latitude, float& Longitude, float& Distance) con
 
 	if (lcDot(CameraXY, X) > 0)
 		Longitude = -Longitude;
-	Distance = lcLength(mPosition);
+
+/*** LPub3D Mod - Camera Globe ***/
+	Distance = StandardCameraDistance(lcLength(mPosition) /*Native Format*/,
+									  lcGetActiveProject()->GetCDF(),
+									  lcGetActiveProject()->GetModelWidth(),
+									  lcGetActiveProject()->GetResolution(),
+									  lcGetActiveProject()->GetModelScale());
+/*** LPub3D Mod end ***/
 }
+
+/*** LPub3D Mod end ***/
+float lcCamera::GetScale()
+{
+	return 1 / (lcLength(mPosition) / ((LC_CAM_POS / LC_CDF) * lcGetActiveProject()->GetCDF())) ;
+}
+/*** LPub3D Mod - Camera Globe ***/

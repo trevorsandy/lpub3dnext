@@ -51,7 +51,7 @@ public:
     int      &goods,
     QWidget  *parent);
 
-    CameraDistFactorMeta meta;
+    NativeCDMeta meta;
 
 public slots:
   void accept();

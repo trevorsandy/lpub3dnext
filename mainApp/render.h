@@ -1,4 +1,3 @@
-
 /****************************************************************************
 **
 ** Copyright (C) 2007-2009 Kevin Clague. All rights reserved.
@@ -67,6 +66,8 @@ public:
   static void            showLdvLDrawPreferences(int mode);
   static bool            RenderNativeImage(const NativeOptions &);
   static bool            NativeExport(const NativeOptions &);
+  static float           ViewerCameraDistance(Meta &meta, float);
+  static bool            ExecuteViewer(const NativeOptions &, bool Export = false);
   static bool            LoadViewer(const ViewerOptions &);
   static bool            createSnapshotsList(const QStringList &,
                                             const QString &);
@@ -161,21 +162,71 @@ public:
   virtual float cameraDistance(Meta &meta, float);
 };
 
+class xyzVector
+{
+public:
+  xyzVector()
+  {
+  }
+  xyzVector(const float _x, const float _y, const float _z)
+      : x(_x), y(_y), z(_z)
+  {
+  }
+
+  friend bool operator==(const xyzVector& a, const xyzVector& b);
+  friend bool operator!=(const xyzVector& a, const xyzVector& b);
+
+  float x, y, z;
+};
+
+inline bool operator==(const xyzVector &a, const xyzVector &b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+inline bool operator!=(const xyzVector &a, const xyzVector &b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z;
+}
+
 class ViewerOptions
 {
 public:
   ViewerOptions()
   {
     ImageType      = Render::CSI;
+    CameraName     = QString();
     UsingViewpoint = false;
+    IsOrtho        = false;
     ImageWidth     = 800 ;
     ImageHeight    = 600;
+    PageWidth      = 800;
+    PageHeight     = 600;
+    NativeCDF      = -260;
+    Resolution     = 150.0f;
+    ModelScale     = 1.0f;
+    CameraDistance = 0.0f;
+    FoV            = 0.0f;
+    ZNear          = 0.0f;
+    ZFar           = 0.0f;
+    Latitude       = 0.0f;
+    Longitude      = 0.0f;
+    RotStep        = xyzVector(0, 0, 0);
+    Target         = xyzVector(0, 0, 0);
   }
+//  virtual ~ViewerOptions(){}
   QString ViewerCsiKey;
   Render::Mt ImageType;
   QString ImageFileName;
+  QString RotStepType;
+  QString CameraName;
   int ImageWidth;
   int ImageHeight;
+  int PageWidth;
+  int PageHeight;
+  int NativeCDF;
+  float Resolution;
+  float ModelScale;
   float CameraDistance;
   float FoV;
   float ZNear;
@@ -183,40 +234,41 @@ public:
   float Latitude;
   float Longitude;
   bool UsingViewpoint;
+  bool IsOrtho;
+  xyzVector RotStep;
+  xyzVector Target;
 };
 
-class NativeOptions
+class NativeOptions : public ViewerOptions
 {
 public:
+  NativeOptions(const ViewerOptions &rhs)
+      : ViewerOptions(rhs),
+        IniFlag(-1),
+        ExportMode(-1),
+        LineWidth(1.0),
+        TransBackground(true),
+        HighlightNewParts(false)
+  { }
   NativeOptions()
+      : ViewerOptions()
   {
-    ImageType         = Render::CSI;
     TransBackground   = true;
     HighlightNewParts = false;
-    UsingViewpoint    = false;
     LineWidth         = 1.0;
     ExportMode        = -1; //NONE
     IniFlag           = -1; //NONE
   }
+//  virtual ~NativeOptions(){}
   QStringList ExportArgs;
   QString InputFileName;
   QString OutputFileName;
   QString ExportFileName;
-  Render::Mt ImageType;
-  int ExportMode;
   int IniFlag;
-  float ImageWidth;
-  float ImageHeight;
-  float FoV;
-  float ZNear;
-  float ZFar;
-  float Latitude;
-  float Longitude;
-  float CameraDistance;
+  int ExportMode;
   float LineWidth;
-  bool HighlightNewParts;
   bool TransBackground;
-  bool UsingViewpoint;
+  bool HighlightNewParts;
 };
 
 inline void removeEmptyStrings(QStringList &l)

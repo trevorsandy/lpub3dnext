@@ -66,7 +66,7 @@ GlobalProjectDialog::GlobalProjectDialog(
 
   QGroupBox *box = new QGroupBox("Renderer");
   layout->addWidget(box);
-  MetaGui *child =new RendererGui(&lpubMeta->cameraDistNative,box);
+  MetaGui *child =new RendererGui(&lpubMeta->nativeCD,box);
   data->children.append(child);
 
   box = new QGroupBox("Resolution");

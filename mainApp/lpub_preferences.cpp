@@ -2018,10 +2018,9 @@ void Preferences::rendererPreferences(UpdateFlag updateFlag)
         rendererTimeout = Settings.value(QString("%1/%2").arg(SETTINGS,"RendererTimeout")).toInt();
     }
 
-    // Native renderer camera distance factor
+    // Native renderer camera distance factor - Do not add Settings if not exist
     if ( ! Settings.contains(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"))) {
         cameraDistFactorNative = CAMERA_DISTANCE_FACTOR_NATIVE_DEFAULT;
-        Settings.setValue(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"),cameraDistFactorNative);
     } else {
         cameraDistFactorNative = Settings.value(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative")).toInt();
     }
@@ -3619,6 +3618,8 @@ void Preferences::viewerPreferences()
     QSettings Settings;
     if (Settings.contains(QString("%1/%2").arg(SETTINGS,"ProjectsPath")))
         lcSetProfileString(LC_PROFILE_PROJECTS_PATH, Settings.value(QString("%1/%2").arg(SETTINGS,"ProjectsPath")).toString());
+
+    lcSetProfileInt(LC_PROFILE_SET_TARGET_POSITION, false);
 }
 
 bool Preferences::getPreferences()

@@ -291,15 +291,9 @@ void CsiItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
       showCsiAnnoAction->setIcon(QIcon(":/resources/hidepartannotation.png"));
   }
 
-  QAction *cameraDistFactorAction = nullptr;
-  QAction *scaleAction = nullptr;
-  if (Preferences::usingNativeRenderer){
-      cameraDistFactorAction  = commonMenus.cameraDistFactorrMenu(menu, pl);
-  } else {
-      scaleAction             = commonMenus.scaleMenu(menu, pl);
-  }
-  QAction *cameraFoVAction    = commonMenus.cameraFoVMenu(menu, pl);
   QAction *cameraAnglesAction = commonMenus.cameraAnglesMenu(menu, pl);
+  QAction *scaleAction        = commonMenus.scaleMenu(menu, pl);
+  QAction *cameraFoVAction    = commonMenus.cameraFoVMenu(menu, pl);
 
   QAction *marginsAction = nullptr;
   switch (parentRelativeType) {
@@ -472,12 +466,6 @@ void CsiItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
                         topOfStep,
                         bottomOfStep,
                         &step->csiPlacement.placement);
-    } else if (selectedAction == cameraDistFactorAction) {
-        changeCameraDistFactor(pl+" Camera Distance",
-                               "Native Camera Distance",
-                               topOfStep,
-                               bottomOfStep,
-                               &step->csiCameraMeta.cameraDistNative.factor);
     } else if (selectedAction == scaleAction){
         changeFloatSpin(pl+" Scale",
                         "Model Size",

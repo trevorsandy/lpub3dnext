@@ -330,15 +330,6 @@ public:
                         int   append = 1,
                         bool checkLocal = true);
 
-  void changeCameraDistFactor(
-                        QString,
-                        QString,
-                        const Where &,
-                        const Where &,
-                        IntMeta *,
-                        int  append = 1,
-                        bool checkLocal = true);
-
   void changeFloat(     QString,
                         QString,
                         const Where &,

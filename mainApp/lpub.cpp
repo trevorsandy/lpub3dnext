@@ -1567,20 +1567,20 @@ void Gui::clearAllCaches()
     timer.start();
 
     if (Preferences::enableFadeSteps || Preferences::enableHighlightStep) {
-            ldrawFile.clearPrevStepPositions();
-        }
+        ldrawFile.clearPrevStepPositions();
+    }
 
-        clearPLICache();
-        clearCSICache();
-        clearSubmodelCache();
-        clearTempCache();
+    clearPLICache();
+    clearCSICache();
+    clearSubmodelCache();
+    clearTempCache();
 
-        //reload current model file
-        int savePage = displayPageNum;
-        openFile(curFile);
-        displayPageNum = savePage;
-        displayPage();
-        enableActions();
+    //reload current model file
+    int savePage = displayPageNum;
+    openFile(curFile);
+    displayPageNum = savePage;
+    displayPage();
+    enableActions();
 
     emit messageSig(LOG_STATUS, QString("All caches reset and model file reloaded (%1 parts). %2")
                                         .arg(ldrawFile.getPartCount())
@@ -2827,6 +2827,8 @@ void Gui::initialize()
   connect(this,        SIGNAL(setExportingSig(bool)),              gMainWindow, SLOT(Halt3DViewer(bool)));
   connect(this,        SIGNAL(enable3DActionsSig()),               gMainWindow, SLOT(Enable3DActions()));
   connect(this,        SIGNAL(disable3DActionsSig()),              gMainWindow, SLOT(Disable3DActions()));
+  connect(this,        SIGNAL(enable3DActionsSig()),               this,        SLOT(Enable3DActions()));
+  connect(this,        SIGNAL(disable3DActionsSig()),              this,        SLOT(Disable3DActions()));
   connect(this,        SIGNAL(updateAllViewsSig()),                gMainWindow, SLOT(UpdateAllViews()));
   connect(this,        SIGNAL(clearViewerWindowSig()),             gMainWindow, SLOT(NewProject()));
 
@@ -3914,17 +3916,7 @@ void Gui::createActions()
     zoomOutComboAct->setEnabled(false);
     connect(zoomOutComboAct, SIGNAL(triggered()), this, SLOT(zoomOut()));
 
-    viewerZoomSliderAct = new QWidgetAction(nullptr);
-    viewerZoomSliderWidget = new QSlider();
-    viewerZoomSliderWidget->setSingleStep(1);
-    viewerZoomSliderWidget->setTickInterval(10);
-    viewerZoomSliderWidget->setTickPosition(QSlider::TicksBelow);
-    viewerZoomSliderWidget->setMaximum(150);
-    viewerZoomSliderWidget->setMinimum(1);
-    viewerZoomSliderWidget->setValue(50);
-    connect(viewerZoomSliderWidget, SIGNAL(valueChanged(int)), this, SLOT(ViewerZoomSlider(int)));
     // firstPage,lastPage,nextPage,previousPage
-
     firstPageAct = new QAction(QIcon(":/resources/first.png"),tr("First Page"), this);
     firstPageAct->setShortcut(tr("Ctrl+P"));
     firstPageAct->setStatusTip(tr("Go to first page of document - Ctrl+P"));
@@ -4192,6 +4184,8 @@ void Gui::createActions()
     viewLogAct->setShortcut(tr("Alt+L"));
     viewLogAct->setStatusTip(tr("View %1 log - Alt+L").arg(VER_PRODUCTNAME_STR));
     connect(viewLogAct, SIGNAL(triggered()), this, SLOT(viewLog()));
+
+    create3DActions();
 }
 
 void Gui::loadPages(){
@@ -4303,6 +4297,7 @@ void Gui::enableActions()
 
   povrayRenderAct->setEnabled(true);
 
+  //3DViewer
   //ViewerExportMenu->setEnabled(true); // Hide 3DViewer step export functions
 
 }
@@ -4391,6 +4386,7 @@ void Gui::disableActions()
 
   povrayRenderAct->setEnabled(false);
 
+  // 3DViewer
   // ViewerExportMenu->setEnabled(false); // Hide 3DViewer step export functions
 
 }
@@ -4424,45 +4420,9 @@ void Gui::disableActions2()
     addTextAct->setEnabled(false);
 }
 
-void Gui::partsWidgetVisibilityChanged(bool visible)
-{
-    QSettings Settings;
-    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_PARTS_WIDGET_KEY),visible);
-}
-
-void Gui::exportToolBarVisibilityChanged(bool visible)
-{
-    QSettings Settings;
-    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_EXPORT_TOOLBAR_KEY),visible);
-}
-
-void Gui::cacheToolBarVisibilityChanged(bool visible)
-{
-    QSettings Settings;
-    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_CACHE_TOOLBAR_KEY),visible);
-}
-
-void Gui::setupToolBarVisibilityChanged(bool visible)
-{
-    QSettings Settings;
-    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_SETUP_TOOLBAR_KEY),visible);
-}
-
-void Gui::editToolBarVisibilityChanged(bool visible)
-{
-    QSettings Settings;
-    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_EDIT_TOOLBAR_KEY),visible);
-}
-
-void Gui::editParamsToolBarVisibilityChanged(bool visible)
-{
-    QSettings Settings;
-    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_EDITPARAMS_TOOLBAR_KEY),visible);
-}
-
 void Gui::createMenus()
 {
-  // Editor Menus
+    // Editor Menus
 
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
@@ -4620,72 +4580,9 @@ void Gui::createMenus()
     configMenu->addSeparator();
     configMenu->addAction(preferencesAct);
 
-   // 3DViewer Menus
+    // 3DViewer
 
-    /*
-     * Not used
-    FileMenuViewer = menuBar()->addMenu(tr("&Step"));
-    FileMenuViewer->addAction(gMainWindow->mActions[LC_FILE_SAVEAS]);
-    */
-
-    ViewerExportMenu = new QMenu(tr("&Export As..."), this);
-    ViewerExportMenu->setIcon(QIcon(":/resources/exportas.png"));
-    ViewerExportMenu->addAction(gMainWindow->mActions[LC_FILE_EXPORT_3DS]);
-    gMainWindow->mActions[LC_FILE_EXPORT_3DS]->setIcon(QIcon(":/resources/3ds32.png"));
-    ViewerExportMenu->addAction(gMainWindow->mActions[LC_FILE_EXPORT_COLLADA]);
-    gMainWindow->mActions[LC_FILE_EXPORT_COLLADA]->setIcon(QIcon(":/resources/dae32.png"));
-    ViewerExportMenu->addAction(gMainWindow->mActions[LC_FILE_EXPORT_WAVEFRONT]);
-    gMainWindow->mActions[LC_FILE_EXPORT_WAVEFRONT]->setIcon(QIcon(":/resources/obj32.png"));
-
-    ViewerMenu = menuBar()->addMenu(tr("&3DViewer"));
-    ViewerMenu->addAction(povrayRenderAct);
-    ViewerMenu->addSeparator();
-    ViewerMenu->addMenu(ViewerExportMenu);
-
-    ViewerMenu->addSeparator();
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_ZOOM_EXTENTS]);
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_LOOK_AT]);
-    gMainWindow->mActions[LC_VIEW_LOOK_AT]->setIcon(QIcon(":/resources/lookat.png"));
-
-    ViewerMenu->addMenu(gMainWindow->GetToolsMenu());
-    ViewerMenu->addMenu(gMainWindow->GetViewpointMenu());
-    gMainWindow->mActions[LC_VIEW_VIEWPOINT_FRONT]->setIcon(QIcon(":/resources/front.png"));
-    gMainWindow->mActions[LC_VIEW_VIEWPOINT_BACK]->setIcon(QIcon(":/resources/back.png"));
-    gMainWindow->mActions[LC_VIEW_VIEWPOINT_LEFT]->setIcon(QIcon(":/resources/left.png"));
-    gMainWindow->mActions[LC_VIEW_VIEWPOINT_RIGHT]->setIcon(QIcon(":/resources/right.png"));
-    gMainWindow->mActions[LC_VIEW_VIEWPOINT_TOP]->setIcon(QIcon(":/resources/top.png"));
-    gMainWindow->mActions[LC_VIEW_VIEWPOINT_BOTTOM]->setIcon(QIcon(":/resources/bottom.png"));
-
-/* Hide camera menu */
-//    ViewerMenu->addMenu(gMainWindow->GetCameraMenu());
-    ViewerMenu->addMenu(gMainWindow->GetProjectionMenu());
-    ViewerMenu->addMenu(gMainWindow->GetShadingMenu());
-
-    ViewerMenu->addSeparator();
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_SPLIT_HORIZONTAL]);
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_SPLIT_VERTICAL]);
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_REMOVE_VIEW]);
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_RESET_VIEWS]);
-
-    ViewerMenu->addSeparator();
-    ViewerMenu->addAction(gMainWindow->mActions[LC_VIEW_PREFERENCES]);
-    ViewerMenu->addSeparator();
-
-    connect(gMainWindow->mActions[LC_VIEW_VIEWPOINT_HOME], SIGNAL(triggered()), this, SLOT(ResetViewerZoomSlider()));
-
-    viewerZoomSliderAct->setDefaultWidget(viewerZoomSliderWidget);
-    ViewerZoomSliderMenu = new QMenu(tr("Zoom Slider"),this);
-    ViewerZoomSliderMenu->addAction(viewerZoomSliderAct);
-    gMainWindow->mActions[LC_EDIT_ACTION_ZOOM]->setMenu(ViewerZoomSliderMenu);
-
-    ((QToolButton*)gMainWindow->mToolsToolBar->widgetForAction(gMainWindow->mActions[LC_EDIT_ACTION_ZOOM]))->setPopupMode(QToolButton::InstantPopup);
-
-    QMenu* ToolBarViewerMenu = ViewerMenu->addMenu(tr("3DViewer Too&lbar"));
-    ToolBarViewerMenu->addAction(gMainWindow->mToolsToolBar->toggleViewAction());
-    ViewerMenu->addSeparator();
-    // About 3D Viewer
-    ViewerMenu->addAction(gMainWindow->mActions[LC_HELP_ABOUT]);
-    // 3D Viewer Menus End
+    create3DMenus();
 
     // Help Menus
 
@@ -4701,6 +4598,41 @@ void Gui::createMenus()
     helpMenu->addSeparator();
     // About Editor
     helpMenu->addAction(aboutAct);
+
+    previousPageContinuousMenu = new QMenu(tr("Continuous Page Previous"), this);
+    previousPageContinuousMenu->addAction(previousPageContinuousAct);
+    nextPageContinuousMenu = new QMenu(tr("Continuous Page Next"), this);
+    nextPageContinuousMenu->addAction(nextPageContinuousAct);
+
+    zoomSliderMenu = new QMenu(tr("Zoom Slider"),this);
+    zoomSliderMenu->addAction(zoomSliderAct);
+
+    sceneRulerTrackingMenu = new QMenu(tr("Ruler Tracking"),this);
+    sceneRulerTrackingMenu->addAction(hideRulerPageBackgroundAct);
+    sceneRulerTrackingMenu->addSeparator();
+    sceneRulerTrackingMenu->addAction(sceneRulerTrackingNoneAct);
+    sceneRulerTrackingMenu->addAction(sceneRulerTrackingTickAct);
+    sceneRulerTrackingMenu->addAction(sceneRulerTrackingLineAct);
+    sceneRulerTrackingMenu->addSeparator();
+    sceneRulerTrackingMenu->addAction(showTrackingCoordinatesAct);
+
+    sceneGuidesMenu = new QMenu(tr("Scene Guides"),this);
+    sceneGuidesMenu->addAction(sceneGuidesDashLineAct);
+    sceneGuidesMenu->addAction(sceneGuidesSolidLineAct);
+    sceneGuidesMenu->addSeparator();
+    sceneGuidesMenu->addAction(sceneGuidesPosTLeftAct);
+    sceneGuidesMenu->addAction(sceneGuidesPosTRightAct);
+    sceneGuidesMenu->addAction(sceneGuidesPosCentreAct);
+    sceneGuidesMenu->addAction(sceneGuidesPosBLeftAct);
+    sceneGuidesMenu->addAction(sceneGuidesPosBRightAct);
+    sceneGuidesMenu->addSeparator();
+    sceneGuidesMenu->addAction(showGuidesCoordinatesAct);
+
+    snapToGridMenu = new QMenu(tr("Snap to Grid"), this);
+    snapToGridMenu->addAction(hideGridPageBackgroundAct);
+    snapToGridMenu->addSeparator();
+    for (int actionIdx = GRID_SIZE_FIRST; actionIdx <= GRID_SIZE_LAST; actionIdx++)
+        snapToGridMenu->addAction(snapGridActions[actionIdx]);
 }
 
 void Gui::createToolBars()
@@ -4855,14 +4787,10 @@ void Gui::createToolBars()
     navigationToolBar->setObjectName("NavigationToolbar");
     navigationToolBar->addAction(firstPageAct);
 
-    previousPageContinuousMenu = new QMenu(tr("Continuous Page Previous"), this);
-    previousPageContinuousMenu->addAction(previousPageContinuousAct);
     previousPageComboAct->setMenu(previousPageContinuousMenu);
     navigationToolBar->addAction(previousPageComboAct);
     navigationToolBar->addWidget(setPageLineEdit);
 
-    nextPageContinuousMenu = new QMenu(tr("Continuous Page Next"), this);
-    nextPageContinuousMenu->addAction(nextPageContinuousAct);
     nextPageComboAct->setMenu(nextPageContinuousMenu);
     navigationToolBar->addAction(nextPageComboAct);
     navigationToolBar->addAction(lastPageAct);
@@ -4882,114 +4810,26 @@ void Gui::createToolBars()
     zoomToolBar->addAction(bringToFrontAct);
     zoomToolBar->addAction(sendToBackAct);
 
-    zoomSliderMenu = new QMenu(tr("Zoom Slider"),this);
-    zoomSliderMenu->addAction(zoomSliderAct);
     zoomInComboAct->setMenu(zoomSliderMenu);
     zoomToolBar->addAction(zoomInComboAct);
     zoomOutComboAct->setMenu(zoomSliderMenu);
     zoomToolBar->addAction(zoomOutComboAct);
 
-    sceneRulerTrackingMenu = new QMenu(tr("Ruler Tracking"),this);
-    sceneRulerTrackingMenu->addAction(hideRulerPageBackgroundAct);
-    sceneRulerTrackingMenu->addSeparator();
-    sceneRulerTrackingMenu->addAction(sceneRulerTrackingNoneAct);
-    sceneRulerTrackingMenu->addAction(sceneRulerTrackingTickAct);
-    sceneRulerTrackingMenu->addAction(sceneRulerTrackingLineAct);
-    sceneRulerTrackingMenu->addSeparator();
-    sceneRulerTrackingMenu->addAction(showTrackingCoordinatesAct);
     sceneRulerComboAct->setMenu(sceneRulerTrackingMenu);
     zoomToolBar->addAction(sceneRulerComboAct);
 
-    sceneGuidesMenu = new QMenu(tr("Scene Guides"),this);
-    sceneGuidesMenu->addAction(sceneGuidesDashLineAct);
-    sceneGuidesMenu->addAction(sceneGuidesSolidLineAct);
-    sceneGuidesMenu->addSeparator();
-    sceneGuidesMenu->addAction(sceneGuidesPosTLeftAct);
-    sceneGuidesMenu->addAction(sceneGuidesPosTRightAct);
-    sceneGuidesMenu->addAction(sceneGuidesPosCentreAct);
-    sceneGuidesMenu->addAction(sceneGuidesPosBLeftAct);
-    sceneGuidesMenu->addAction(sceneGuidesPosBRightAct);
-    sceneGuidesMenu->addSeparator();
-    sceneGuidesMenu->addAction(showGuidesCoordinatesAct);
     sceneGuidesComboAct->setMenu(sceneGuidesMenu);
     zoomToolBar->addAction(sceneGuidesComboAct);
 
-    snapToGridMenu = new QMenu(tr("Snap to Grid"), this);
-    snapToGridMenu->addAction(hideGridPageBackgroundAct);
-    snapToGridMenu->addSeparator();
-    for (int actionIdx = GRID_SIZE_FIRST; actionIdx <= GRID_SIZE_LAST; actionIdx++)
-        snapToGridMenu->addAction(snapGridActions[actionIdx]);
     snapToGridComboAct->setMenu(snapToGridMenu);
     zoomToolBar->addAction(snapToGridComboAct);
-}
 
-void Gui::ViewerZoomSlider(int value)
-{
-    float z = value;
-    if (value > mViewerZoomLevel)
-        z = 10.0f;
-    else
-        z = -10.0f;
-    gMainWindow->GetActiveView()->Zoom(z);
-    mViewerZoomLevel = value;
-}
-
-void Gui::ResetViewerZoomSlider()
-{
-   viewerZoomSliderWidget->setValue(50);
+    create3DToolBars();
 }
 
 void Gui::statusBarMsg(QString msg)
 {
   statusBar()->showMessage(msg);
-}
-
-void Gui::createStatusBar()
-{
-
-  statusBar()->showMessage(tr("Ready"));
-  connect(gMainWindow->mLCStatusBar, SIGNAL(messageChanged(QString)), this, SLOT(showLCStatusMessage()));
-
-}
-
-void Gui::showLCStatusMessage(){
-
-    if(!viewerDockWindow->isFloating())
-    statusBarMsg(gMainWindow->mLCStatusBar->currentMessage());
-}
-
-void Gui::parseError(QString errorMsg,Where &here) 
-{ 
-    if (parsedMessages.contains(here)) 
-        return; 
- 
-    QString parseMessage = QString("%1 (file: %2, line: %3)") .arg(errorMsg) .arg(here.modelName) .arg(here.lineNumber + 1); 
-    if (Preferences::modeGUI) { 
-        showLine(here); 
-        if (Preferences::showParseErrors) { 
-            QCheckBox *cb = new QCheckBox("Do not show line parse error message again."); 
-            QMessageBoxResizable box; 
-            box.setWindowTitle(tr(VER_PRODUCTNAME_STR " Line Parse Error")); 
-            box.setText(parseMessage); 
-            box.setIcon(QMessageBox::Icon::Warning); 
-            box.addButton(QMessageBox::Ok); 
-            box.setDefaultButton(QMessageBox::Ok); 
-            box.setCheckBox(cb); 
- 
-            QObject::connect(cb, &QCheckBox::stateChanged, [](int state){ 
-                if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) { 
-                    Preferences::setShowParseErrorsPreference(false); 
-                } else { 
-                    Preferences::setShowParseErrorsPreference(true); 
-                } 
-            }); 
-            box.adjustSize(); 
-            box.exec(); 
-        } 
-    } 
-    logError() << qPrintable(parseMessage); 
- 
-    parsedMessages.append(here); 
 }
 
 void Gui::createDockWindows()
@@ -5003,73 +4843,7 @@ void Gui::createDockWindows()
     addDockWidget(Qt::RightDockWidgetArea, fileEditDockWindow);
     viewMenu->addAction(fileEditDockWindow->toggleViewAction());
 
-    //3D Viewer
-
-    gMainWindow->mActions[LC_FILE_SAVE_IMAGE]->setIcon(QIcon(":/resources/saveimage.png"));
-    gMainWindow->mActions[LC_FILE_SAVE_IMAGE]->setShortcut(tr("Alt+0"));
-    gMainWindow->mActions[LC_FILE_SAVE_IMAGE]->setStatusTip(tr("Save an image of the current view - Alt+0"));
-    viewerDockWindow = new QDockWidget(trUtf8(wCharToUtf8("3DViewer")), this);
-    viewerDockWindow->setObjectName("ModelDockWindow");
-    viewerDockWindow->setAllowedAreas(
-                Qt::TopDockWidgetArea  | Qt::BottomDockWidgetArea |
-                Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    viewerDockWindow->setWidget(gMainWindow);
-    addDockWidget(Qt::RightDockWidgetArea, viewerDockWindow);
-    viewMenu->addAction(viewerDockWindow->toggleViewAction());
-
-    tabifyDockWidget(viewerDockWindow, fileEditDockWindow);
-
-    //timeline
-    gMainWindow->mTimelineToolBar->setWindowTitle(trUtf8(wCharToUtf8("Timeline")));
-    gMainWindow->mTimelineToolBar->setObjectName("TimelineToolbar");
-    gMainWindow->mTimelineToolBar->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    gMainWindow->mTimelineToolBar->setAcceptDrops(true);
-    addDockWidget(Qt::RightDockWidgetArea, gMainWindow->mTimelineToolBar);
-    viewMenu->addAction(gMainWindow->mTimelineToolBar->toggleViewAction());
-
-    tabifyDockWidget(viewerDockWindow, gMainWindow->mTimelineToolBar);
-
-    //Properties
-    gMainWindow->mPropertiesToolBar->setWindowTitle(trUtf8(wCharToUtf8("Properties")));
-    gMainWindow->mPropertiesToolBar->setObjectName("PropertiesToolbar");
-    gMainWindow->mPropertiesToolBar->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    addDockWidget(Qt::RightDockWidgetArea, gMainWindow->mPropertiesToolBar);
-    viewMenu->addAction(gMainWindow->mPropertiesToolBar->toggleViewAction());
-
-    tabifyDockWidget(gMainWindow->mTimelineToolBar, gMainWindow->mPropertiesToolBar);
-
-    //Part Selection
-    gMainWindow->mPartsToolBar->setWindowTitle(trUtf8(wCharToUtf8("Parts")));
-    gMainWindow->mPartsToolBar->setObjectName("PartsToolbar");
-    gMainWindow->mPartsToolBar->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    addDockWidget(Qt::RightDockWidgetArea, gMainWindow->mPartsToolBar);
-    viewMenu->addAction(gMainWindow->mPartsToolBar->toggleViewAction());
-
-    QSettings Settings;
-    bool viewable = false;
-    if (Settings.contains(QString("%1/%2").arg(SETTINGS,VIEW_PARTS_WIDGET_KEY)))
-        viewable = Settings.value(QString("%1/%2").arg(SETTINGS,VIEW_PARTS_WIDGET_KEY)).toBool();
-    viewMenu->addAction(gMainWindow->mPartsToolBar->toggleViewAction());
-    gMainWindow->mPartsToolBar->toggleViewAction()->setChecked(viewable);
-    connect (gMainWindow->mPartsToolBar, SIGNAL (visibilityChanged(bool)),
-                                   this, SLOT (partsWidgetVisibilityChanged(bool)));
-
-    tabifyDockWidget(gMainWindow->mPropertiesToolBar, gMainWindow->mPartsToolBar);
-
-    //Colors Selection
-    gMainWindow->mColorsToolBar->setWindowTitle(trUtf8(wCharToUtf8("Colors")));
-    gMainWindow->mColorsToolBar->setObjectName("ColorsToolbar");
-    gMainWindow->mColorsToolBar->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    addDockWidget(Qt::RightDockWidgetArea, gMainWindow->mColorsToolBar);
-    viewMenu->addAction(gMainWindow->mColorsToolBar->toggleViewAction());
-
-    viewable = false;
-    if (Settings.contains(QString("%1/%2").arg(SETTINGS,VIEW_COLORS_WIDGET_KEY)))
-        viewable = Settings.value(QString("%1/%2").arg(SETTINGS,VIEW_COLORS_WIDGET_KEY)).toBool();
-    viewMenu->addAction(gMainWindow->mColorsToolBar->toggleViewAction());
-    gMainWindow->mColorsToolBar->toggleViewAction()->setChecked(viewable);
-
-    tabifyDockWidget(gMainWindow->mPartsToolBar, gMainWindow->mColorsToolBar);
+    create3DDockWindows();
 
     // launching with viewerDockWindow raised is not stable so start with fileEdit until I figure out what's wrong.
     fileEditDockWindow->raise();
@@ -5078,19 +4852,36 @@ void Gui::createDockWindows()
 //#else
 //    viewerDockWindow->raise();
 //#endif
-
-    connect(viewerDockWindow, SIGNAL (topLevelChanged(bool)), this, SLOT (toggleLCStatusBar(bool)));
-    //**
 }
 
-void Gui::toggleLCStatusBar(bool topLevel){
+void Gui::exportToolBarVisibilityChanged(bool visible)
+{
+    QSettings Settings;
+    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_EXPORT_TOOLBAR_KEY),visible);
+}
 
-    Q_UNUSED(topLevel);
+void Gui::cacheToolBarVisibilityChanged(bool visible)
+{
+    QSettings Settings;
+    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_CACHE_TOOLBAR_KEY),visible);
+}
 
-    if(viewerDockWindow->isFloating())
-        gMainWindow->statusBar()->show();
-    else
-        gMainWindow->statusBar()->hide();
+void Gui::setupToolBarVisibilityChanged(bool visible)
+{
+    QSettings Settings;
+    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_SETUP_TOOLBAR_KEY),visible);
+}
+
+void Gui::editToolBarVisibilityChanged(bool visible)
+{
+    QSettings Settings;
+    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_EDIT_TOOLBAR_KEY),visible);
+}
+
+void Gui::editParamsToolBarVisibilityChanged(bool visible)
+{
+    QSettings Settings;
+    Settings.setValue(QString("%1/%2").arg(SETTINGS,VIEW_EDITPARAMS_TOOLBAR_KEY),visible);
 }
 
 void Gui::readSettings()
@@ -5124,6 +4915,40 @@ void Gui::writeSettings()
     Settings.endGroup();
 
     gApplication->SaveTabLayout();
+}
+
+void Gui::parseError(QString errorMsg,Where &here)
+{
+    if (parsedMessages.contains(here))
+        return;
+
+    QString parseMessage = QString("%1 (file: %2, line: %3)") .arg(errorMsg) .arg(here.modelName) .arg(here.lineNumber + 1);
+    if (Preferences::modeGUI) {
+        showLine(here);
+        if (Preferences::showParseErrors) {
+            QCheckBox *cb = new QCheckBox("Do not show line parse error message again.");
+            QMessageBoxResizable box;
+            box.setWindowTitle(tr(VER_PRODUCTNAME_STR " Line Parse Error"));
+            box.setText(parseMessage);
+            box.setIcon(QMessageBox::Icon::Warning);
+            box.addButton(QMessageBox::Ok);
+            box.setDefaultButton(QMessageBox::Ok);
+            box.setCheckBox(cb);
+
+            QObject::connect(cb, &QCheckBox::stateChanged, [](int state){
+                if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) {
+                    Preferences::setShowParseErrorsPreference(false);
+                } else {
+                    Preferences::setShowParseErrorsPreference(true);
+                }
+            });
+            box.adjustSize();
+            box.exec();
+        }
+    }
+    logError() << qPrintable(parseMessage);
+
+    parsedMessages.append(here);
 }
 
 void Gui::statusMessage(LogType logType, QString message) {

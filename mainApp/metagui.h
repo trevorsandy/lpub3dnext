@@ -541,7 +541,7 @@ public slots:
  *
  **********************************************************************/
 
-class CameraDistFactorMeta;
+class NativeCDMeta;
 class QGroupBox;
 class QSpinBox;
 class CameraDistFactorGui : public MetaGui
@@ -551,14 +551,14 @@ public:
 
   CameraDistFactorGui(
     QString const &heading,
-    CameraDistFactorMeta *meta,
+    NativeCDMeta *meta,
     QGroupBox  *parent = nullptr);
   ~CameraDistFactorGui() {}
 
   virtual void apply(QString &modelName);
 
 private:
-  CameraDistFactorMeta  *meta;
+  NativeCDMeta  *meta;
 
   int       saveFactor;
   QSpinBox  *cameraDistFactorSpin;
@@ -1058,14 +1058,14 @@ class RendererGui : public MetaGui
 public:
   bool          clearCaches;
 
-  RendererGui(CameraDistFactorMeta *_meta,
+  RendererGui(NativeCDMeta *_meta,
               QGroupBox *parent = nullptr);
   ~RendererGui() {}
 
   virtual void apply(QString &topLevelFile);
 
 private:
-  CameraDistFactorMeta  *meta;
+  NativeCDMeta  *meta;
 
   QComboBox    *combo;
   QCheckBox    *ldvSingleCallBox;
@@ -1089,7 +1089,7 @@ private:
   bool          snapshotListModified;
   bool          povFileGenModified;
   bool          cameraDistFactorModified;
-  bool          cameraDistFactorDefaulSettings;
+  bool          cameraDistFactorDefaulSetting;
 
 public slots:
   void typeChange(QString const &); 

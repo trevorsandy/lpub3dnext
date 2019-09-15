@@ -619,13 +619,8 @@ void Gui::exportAsHtml()
 
     // create partList key
     FloatPairMeta emptyCA;
-    float partListModelScale;
     bool noCA = meta.rotStep.value().type == "ABS";
-    if (Preferences::usingNativeRenderer) {
-        partListModelScale = meta.LPub.bom.cameraDistNative.factor.value();
-    } else {
-        partListModelScale = meta.LPub.bom.modelScale.value();
-    }
+    float partListModelScale = meta.LPub.bom.modelScale.value();
     bool suffix = QFileInfo(getCurFile()).suffix().contains(QRegExp("(dat|ldr|mpd)$",Qt::CaseInsensitive));
     QString partListKey = QString("%1_%2_%3_%4_%5_%6_%7.%8")
                                   .arg(pageSize(meta.LPub.page, 0))

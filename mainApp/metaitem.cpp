@@ -2147,26 +2147,6 @@ void MetaItem::changeFloatSpin(
   }
 }
 
-void MetaItem::changeCameraDistFactor(
-  QString       title,
-  QString       heading,
-  const Where  &topOfStep,
-  const Where  &bottomOfStep,
-  IntMeta      *factor,
-  int           append,
-  bool          local)
-{
-  int value;
-  value = factor->value();
-
-  bool ok = CameraDistFactorDialog::getCameraDistFactor(title,heading,value,gui);
-
-  if (ok) {
-    factor->setValue(value);
-    setMetaTopOf(topOfStep,bottomOfStep,factor,append,local);
-  }
-}
-
 void MetaItem::changeBorder(
   QString      title,
   const Where &topOfStep,
@@ -2292,19 +2272,19 @@ void MetaItem::addDivider(
     QDialog *dialog = new QDialog();
 
     QFormLayout *form = new QFormLayout(dialog);
-  form->addRow(new QLabel("Divider Allocation"));
+    form->addRow(new QLabel("Divider Allocation"));
 
-  QGroupBox *box = new QGroupBox("Select Allocation");
-  form->addWidget(box);
+    QGroupBox *box = new QGroupBox("Select Allocation");
+    form->addWidget(box);
 
-  QList<QRadioButton *> options;
-  QStringList allocLabels = QStringList()
-  << QString("Vertical") << QString("Horizontal");
+    QList<QRadioButton *> options;
+    QStringList allocLabels = QStringList()
+    << QString("Vertical") << QString("Horizontal");
 
-  // Set default allocation
-  for(int i = 0; i < allocLabels.size(); ++i) {
-      QRadioButton *option = new QRadioButton(allocLabels[i],dialog);
-      if (allocLabels[i] == "Vertical")
+    // Set default allocation
+    for(int i = 0; i < allocLabels.size(); ++i) {
+        QRadioButton *option = new QRadioButton(allocLabels[i],dialog);
+        if (allocLabels[i] == "Vertical")
             option->setChecked(defAlloc == Vertical);
         if (allocLabels[i] == "Horizontal")
             option->setChecked(defAlloc == Horizontal);
@@ -2315,28 +2295,28 @@ void MetaItem::addDivider(
         options << option;
     }
 
-  QFormLayout *subform = new QFormLayout(box);
-  subform->addRow(options[0],options[1]);
+    QFormLayout *subform = new QFormLayout(box);
+    subform->addRow(options[0],options[1]);
 
-  QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
-                             Qt::Horizontal, dialog);
-  form->addRow(&buttonBox);
-  QObject::connect(&buttonBox, SIGNAL(accepted()), dialog, SLOT(accept()));
-  QObject::connect(&buttonBox, SIGNAL(rejected()), dialog, SLOT(reject()));
-  dialog->setMinimumWidth(250);
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                               Qt::Horizontal, dialog);
+    form->addRow(&buttonBox);
+    QObject::connect(&buttonBox, SIGNAL(accepted()), dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), dialog, SLOT(reject()));
+    dialog->setMinimumWidth(250);
 
-  AllocEnc  alloc = Vertical;
-  if (dialog->exec() == QDialog::Accepted) {
-      for(int i = 0; i < allocLabels.size(); ++i) {
-         QRadioButton * option = options[i];
-         if (option->isChecked())
-            alloc = (allocLabels[i] == "Vertical" ? Vertical : Horizontal);
-      }
-  } else {
-    return;
-  }
+    AllocEnc  alloc = Vertical;
+    if (dialog->exec() == QDialog::Accepted) {
+        for(int i = 0; i < allocLabels.size(); ++i) {
+           QRadioButton * option = options[i];
+           if (option->isChecked())
+              alloc = (allocLabels[i] == "Vertical" ? Vertical : Horizontal);
+        }
+    } else {
+      return;
+    }
 
-  bool stepDivider = alloc != defAlloc;
+    bool stepDivider = alloc != defAlloc;
     if (stepDivider) {
          divString += QString(" STEPS");
     }
@@ -2742,22 +2722,22 @@ void MetaItem::updateText(const Where &here, const QString &_text, bool _isHtml,
     QStringList list2;
     foreach (QString string, list){
       string = string.trimmed();
-        QRegExp rx2("\"");
-        int pos = 0;
-        QChar esc('\\');
-        while ((pos = rx2.indexIn(string, pos)) != -1) {
-          pos += rx2.matchedLength();
-          if (pos < string.size()) {
-            QChar ch = string.at(pos-1);
-            if (ch != esc) {
-              string.insert(pos-1,&esc,1);
-              pos++;
-            }
+      QRegExp rx2("\"");
+      int pos = 0;
+      QChar esc('\\');
+      while ((pos = rx2.indexIn(string, pos)) != -1) {
+        pos += rx2.matchedLength();
+        if (pos < string.size()) {
+          QChar ch = string.at(pos-1);
+          if (ch != esc) {
+            string.insert(pos-1,&esc,1);
+            pos++;
           }
         }
-        // if last character is \, append space ' ' so not to escape closing string double quote
-        if (string.at(string.size()-1) == QChar('\\'))
-          string.append(QChar(' '));
+      }
+      // if last character is \, append space ' ' so not to escape closing string double quote
+      if (string.at(string.size()-1) == QChar('\\'))
+        string.append(QChar(' '));
       list2 << string;
     }
 
@@ -2780,41 +2760,41 @@ void MetaItem::insertText()
 
     bool multiStep = false;
 
-      Steps *steps = dynamic_cast<Steps *>(&gui->page);
-      if (steps && steps->list.size() > 0) {
-          if (steps->list.size() > 1) {
-              multiStep = true;
-            } else {
-              Range *range = dynamic_cast<Range *>(steps->list[0]);
-              if (range && range->list.size() > 1) {
-                  multiStep = true;
-                }
-            }
+    Steps *steps = dynamic_cast<Steps *>(&gui->page);
+    if (steps && steps->list.size() > 0) {
+      if (steps->list.size() > 1) {
+        multiStep = true;
+      } else {
+        Range *range = dynamic_cast<Range *>(steps->list[0]);
+        if (range && range->list.size() > 1) {
+          multiStep = true;
+        }
       }
+    }
 
-      if (multiStep) {
-          insertPosition = steps->bottomOfSteps();
-        } else {
-          topOfStep = gui->topOfPages[gui->displayPageNum-1];
-          // capture model when different from model at top of page
-          bottomOfStep = gui->topOfPages[gui->displayPageNum];
-          if (topOfStep.modelName == bottomOfStep.modelName) {
-            // well the model has not changed
-            insertPosition = topOfStep;
-          } else {
-            // we are entering or leaving a submodel
-            Meta mi;
-            Rc rc;
-            // walk back to top of step, - 1 to avoid advacing 1 STEP if we land on a STEP
-            walkBack = bottomOfStep - 1;
-            for (; walkBack.lineNumber >= 0; walkBack--) {
-              QString line = gui->readLine(walkBack);
-              rc = mi.parse(line,walkBack);
-              if (isHeader(line) || rc == StepRc || rc == RotStepRc) {
-                break;
-              }
-            }
-            insertPosition = walkBack;
+    if (multiStep) {
+      insertPosition = steps->bottomOfSteps();
+    } else {
+      topOfStep = gui->topOfPages[gui->displayPageNum-1];
+      // capture model when different from model at top of page
+      bottomOfStep = gui->topOfPages[gui->displayPageNum];
+      if (topOfStep.modelName == bottomOfStep.modelName) {
+        // well the model has not changed
+        insertPosition = topOfStep;
+      } else {
+        // we are entering or leaving a submodel
+        Meta mi;
+        Rc rc;
+        // walk back to top of step, - 1 to avoid advacing 1 STEP if we land on a STEP
+        walkBack = bottomOfStep - 1;
+        for (; walkBack.lineNumber >= 0; walkBack--) {
+          QString line = gui->readLine(walkBack);
+          rc = mi.parse(line,walkBack);
+          if (isHeader(line) || rc == StepRc || rc == RotStepRc) {
+            break;
+          }
+        }
+        insertPosition = walkBack;
       }
       scanPastGlobal(insertPosition);
     }

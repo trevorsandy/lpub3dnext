@@ -370,11 +370,33 @@ void View::SetCameraAngles(float Latitude, float Longitude)
 		if (OldCamera)
 			mCamera->CopySettings(OldCamera);
 	}
-
-	mCamera->SetAngles(Latitude, Longitude, 1.0f);
+/*** LPub3D Mod - Camera Globe ***/
+	mCamera->SetAngles(Latitude, Longitude, 1.0f, mCamera->mTargetPosition);
+/*** LPub3D Mod end ***/
 	ZoomExtents();
 	Redraw();
 }
+
+/*** LPub3D Mod - Camera Globe ***/
+void View::SetCameraGlobe(float Latitude, float Longitude, float Distance, lcVector3 &Target, bool ZoomExt)
+{
+	if (!mCamera || !mCamera->IsSimple())
+	{
+		lcCamera* OldCamera = mCamera;
+
+		mCamera = new lcCamera(true);
+
+		if (OldCamera)
+			mCamera->CopySettings(OldCamera);
+	}
+
+	mCamera->SetAngles(Latitude, Longitude, Distance, Target);
+
+	if (ZoomExt)
+		ZoomExtents();
+	Redraw();
+}
+/*** LPub3D Mod end ***/
 
 void View::SetDefaultCamera()
 {
@@ -528,15 +550,15 @@ void View::ShowContextMenu() const
 /*** LPub3D Mod end ***/
 
 /*** LPub3D Mod - context menu undo/redo ***/
-    Popup->addAction(Actions[LC_EDIT_UNDO]);
-    Popup->addAction(Actions[LC_EDIT_REDO]);
+	Popup->addAction(Actions[LC_EDIT_UNDO]);
+	Popup->addAction(Actions[LC_EDIT_REDO]);
 
-    Popup->addSeparator();
+	Popup->addSeparator();
 /*** LPub3D Mod end ***/
 
 	Popup->addMenu(gMainWindow->GetToolsMenu());
 	Popup->addMenu(gMainWindow->GetViewpointMenu());
-    Popup->addMenu(gMainWindow->GetCameraMenu());
+	Popup->addMenu(gMainWindow->GetCameraMenu());
 	Popup->addMenu(gMainWindow->GetProjectionMenu());
 	Popup->addMenu(gMainWindow->GetShadingMenu());
 
@@ -1583,7 +1605,7 @@ void View::DrawRotateViewOverlay()
 	mContext->SetVertexBufferPointer(Verts);
 	mContext->SetVertexFormatPosition(2);
 
-	GLushort Indices[64 + 32] = 
+	GLushort Indices[64 + 32] =
 	{
 		0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16,
 		17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 0,
@@ -1655,7 +1677,7 @@ void View::DrawGrid()
 	}
 
 	if (!mGridBuffer.IsValid() || MinX != mGridSettings[0] || MinY != mGridSettings[1] || MaxX != mGridSettings[2] || MaxY != mGridSettings[3] ||
-	    Spacing != mGridSettings[4] || (Preferences.mDrawGridStuds ? 1 : 0) != mGridSettings[5] || (Preferences.mDrawGridLines ? 1 : 0) != mGridSettings[6])
+		Spacing != mGridSettings[4] || (Preferences.mDrawGridStuds ? 1 : 0) != mGridSettings[5] || (Preferences.mDrawGridLines ? 1 : 0) != mGridSettings[6])
 	{
 		int VertexBufferSize = 0;
 
@@ -2483,11 +2505,11 @@ void View::UpdateTrackTool()
 		NewTrackTool = LC_TRACKTOOL_ZOOM_REGION;
 		break;
 
-    case LC_TOOL_ROTATESTEP:
+	case LC_TOOL_ROTATESTEP:
 /*** LPub3D Mod - rotate step tool ***/
-        NewTrackTool = LC_TRACKTOOL_ROTATESTEP;
+		NewTrackTool = LC_TRACKTOOL_ROTATESTEP;
 /*** LPub3D Mod end ***/
-        break;
+		break;
 
 	case LC_NUM_TOOLS:
 		break;
@@ -2635,7 +2657,7 @@ void View::StartTracking(lcTrackButton TrackButton)
 				lcArray<lcObject*> Selection;
 				lcObject* Focus = nullptr;
 
-			ActiveModel->GetSelectionInformation(&Flags, Selection, &Focus);
+				ActiveModel->GetSelectionInformation(&Flags, Selection, &Focus);
 				if (!Selection.GetSize() && !Focus)
 					gMainWindow->UpdateDefaultCamera(mCamera);
 			}
@@ -2817,7 +2839,7 @@ void View::OnButtonDown(lcTrackButton TrackButton)
 	case LC_TRACKTOOL_CAMERA:
 		StartTracking(TrackButton);
 		break;
-		
+
 	case LC_TRACKTOOL_SELECT:
 		{
 			lcObjectSection ObjectSection = FindObjectUnderPointer(false, false);

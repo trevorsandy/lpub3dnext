@@ -575,7 +575,7 @@ void lcModel::LoadLDraw(QIODevice& Device, Project* Project)
 
 			if (Token != QLatin1String("!LEOCAD"))
 			{
-				mFileLines.append(OriginalLine); 
+				mFileLines.append(OriginalLine);
 				continue;
 			}
 
@@ -647,7 +647,7 @@ void lcModel::LoadLDraw(QIODevice& Device, Project* Project)
 
 					lcPieceControlPoint& PieceControlPoint = ControlPoints.Add();
 					PieceControlPoint.Transform = lcMatrix44(lcVector4(Numbers[3], Numbers[9], -Numbers[6], 0.0f), lcVector4(Numbers[5], Numbers[11], -Numbers[8], 0.0f),
-					                                         lcVector4(-Numbers[4], -Numbers[10], Numbers[7], 0.0f), lcVector4(Numbers[0], Numbers[2], -Numbers[1], 1.0f));
+															 lcVector4(-Numbers[4], -Numbers[10], Numbers[7], 0.0f), lcVector4(Numbers[0], Numbers[2], -Numbers[1], 1.0f));
 					PieceControlPoint.Scale = Numbers[12];
 				}
 			}
@@ -671,7 +671,7 @@ void lcModel::LoadLDraw(QIODevice& Device, Project* Project)
 
 			if (Library->IsPrimitive(CleanId.constData()))
 			{
-				mFileLines.append(OriginalLine); 
+				mFileLines.append(OriginalLine);
 			}
 			else
 			{
@@ -697,7 +697,7 @@ void lcModel::LoadLDraw(QIODevice& Device, Project* Project)
 			}
 		}
 		else
-			mFileLines.append(OriginalLine); 
+			mFileLines.append(OriginalLine);
 	}
 
 	mCurrentStep = CurrentStep;
@@ -988,7 +988,7 @@ bool lcModel::LoadLDD(const QString& FileData)
 {
 	lcArray<lcPiece*> Pieces;
 	lcArray<lcArray<lcPiece*>> Groups;
-	
+
 	if (!lcImportLXFMLFile(FileData, Pieces, Groups))
 		return false;
 
@@ -2822,6 +2822,27 @@ void lcModel::SetCameraZNear(lcCamera* Camera, float ZNear)
 	gMainWindow->UpdateAllViews();
 }
 
+/*** LPub3D Mod - Camera Globe ***/
+void lcModel::SetCameraGlobe(lcCamera* Camera, float Latitude, float Longitude, float Distance)
+{
+	auto notEqual = [] (const float v1, const float v2)
+	{
+		return qAbs(v1 - v2) > 0.1f;
+	};
+
+	float _Latitude, _Longitude, _Distance;
+	Camera->GetAngles(_Latitude,_Longitude,_Distance);
+
+	if (notEqual(_Latitude,Latitude) ||
+		notEqual(_Longitude,Longitude))
+	{
+		Camera->SetAngles(Latitude, Longitude, Distance,Camera->mTargetPosition);
+		SaveCheckpoint(tr("Update Camera Globe"));
+		gMainWindow->UpdateAllViews();
+	}
+}
+/*** LPub3D Mod end ***/
+
 void lcModel::SetCameraZFar(lcCamera* Camera, float ZFar)
 {
 	if (Camera->m_zFar == ZFar)
@@ -2860,13 +2881,13 @@ bool lcModel::AnyPiecesSelected() const
 bool lcModel::AnyObjectsSelected() const
 {
 /*** LPub3D Mod - Suppress select move overlay ***/
-    for (lcCamera* Camera : mCameras)
-        if (Camera->IsSelected())
-            return true;
+	for (lcCamera* Camera : mCameras)
+		if (Camera->IsSelected())
+			return true;
 /***
-    for (lcPiece* Piece : mPieces)
-        if (Piece->IsSelected())
-            return true;
+	for (lcPiece* Piece : mPieces)
+		if (Piece->IsSelected())
+			return true;
 
 	for (lcLight* Light : mLights)
 		if (Light->IsSelected())
@@ -3106,11 +3127,18 @@ bool lcModel::GetSelectionCenter(lcVector3& Center) const
 bool lcModel::GetPiecesBoundingBox(lcVector3& Min, lcVector3& Max) const
 {
 	bool Valid = false;
+/*** LPub3D Mod - Camera Globe Target Position ***/
+	bool setTargetPositon = lcGetProfileInt(LC_PROFILE_SET_TARGET_POSITION);
+/*** LPub3D Mod end ***/
 	Min = lcVector3(FLT_MAX, FLT_MAX, FLT_MAX);
 	Max = lcVector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 	for (lcPiece* Piece : mPieces)
 	{
+/*** LPub3D Mod - Camera Globe Target Position ***/
+		if (setTargetPositon && !Piece->IsSelected())
+			continue;
+/*** LPub3D Mod end ***/
 		if (Piece->IsVisible(mCurrentStep))
 		{
 			Piece->CompareBoundingBox(Min, Max);
@@ -4151,7 +4179,7 @@ void lcModel::ShowArrayDialog()
 		return;
 /*** LPub3D Mod end ***/
 	}
-	
+
 	lcQArrayDialog Dialog(gMainWindow);
 
 	if (Dialog.exec() != QDialog::Accepted)

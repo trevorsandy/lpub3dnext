@@ -287,7 +287,10 @@ public:
 	void SetViewpoint(lcViewpoint Viewpoint);
 	void SetViewpoint(const lcVector3& Position);
 	void GetAngles(float& Latitude, float& Longitude, float& Distance) const;
-	void SetAngles(float Latitude, float Longitude, float Distance);
+    void SetAngles(float Latitude, float Longitude, float Distance, lcVector3 Target);
+/*** LPub3D Mod - Camera Globe ***/
+	float GetScale();
+/*** LPub3D Mod end ***/
 
 	char m_strName[81];
 

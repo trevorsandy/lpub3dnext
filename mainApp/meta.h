@@ -43,6 +43,7 @@
 #include <QList>
 #include <QHash>
 #include <QRegExp>
+#include <float.h>
 #include <QStringList>
 #include <QMessageBox>
 #include "where.h"
@@ -516,6 +517,94 @@ public:
   }
 //  virtual ~FloatPairMeta() {}
   virtual void    init(BranchMeta *parent, 
+                    const QString name,
+                    Rc _rc=OkRc);
+  virtual Rc parse(QStringList &argv, int index, Where &here);
+  virtual QString format(bool,bool);
+  virtual void doc(QStringList &out, QString preamble);
+};
+
+/* This is a leaf object class for X,Y and Z floating point numbers */
+
+class FloatXYZMeta : public RcMeta {
+protected:
+  float     _x[2];
+  float     _y[2];
+  float     _z[2];
+  float     _min,_max;
+  bool      _populated;
+public:
+  int       _fieldWidth;
+  int       _precision;
+  QString   _inputMask;
+  FloatXYZMeta()
+  {
+    _x[0]       = 0.0f;
+    _y[0]       = 0.0f;
+    _z[0]       = 0.0f;
+    _min        = -FLT_MAX;
+    _max        = FLT_MAX;
+    _fieldWidth = 6;
+    _precision  = 4;
+    _inputMask  = "###9.90";
+    _populated  = false;
+  }
+  FloatXYZMeta(const FloatXYZMeta &rhs) : RcMeta(rhs)
+  {
+    _x[0]       = rhs._x[0];
+    _y[0]       = rhs._y[0];
+    _z[0]       = rhs._z[0];
+    _x[1]       = rhs._x[1];
+    _y[1]       = rhs._y[1];
+    _z[1]       = rhs._z[1];
+    _min        = rhs._min;
+    _max        = rhs._max;
+    _fieldWidth = rhs._fieldWidth;
+    _precision  = rhs._precision;
+    _inputMask  = rhs._inputMask;
+  }
+
+  virtual float x()
+  {
+    return _x[pushed];
+  }
+  virtual float y()
+  {
+    return _y[pushed];
+  }
+  virtual float z()
+  {
+    return _z[pushed];
+  }
+  void setValues(float x, float y, float z)
+  {
+    _x[pushed] = x;
+    _y[pushed] = y;
+    _z[pushed] = z;
+    _populated = true;
+  }
+  void setRange(
+    float min,
+    float max)
+  {
+    _min = min;
+    _max = max;
+  }
+  void setFormats(
+    int fieldWidth,
+    int precision,
+    QString inputMask)
+  {
+    _fieldWidth = fieldWidth;
+    _precision  = precision;
+    _inputMask  = inputMask;
+  }
+  bool isPopulated()
+  {
+    return _populated;
+  }
+//  virtual ~FloatXYZMeta() {}
+  virtual void    init(BranchMeta *parent,
                     const QString name,
                     Rc _rc=OkRc);
   virtual Rc parse(QStringList &argv, int index, Where &here);
@@ -1980,7 +2069,7 @@ public:
 /*
  * Native Camera Distance Factor Meta
  */
-class CameraDistFactorMeta : public BranchMeta
+class NativeCDMeta : public BranchMeta
 {
 public:
   IntMeta factor;
@@ -1988,8 +2077,8 @@ public:
   {
      Preferences::cameraDistFactorNative = factor.value();
   }
-  CameraDistFactorMeta();
-  CameraDistFactorMeta(const CameraDistFactorMeta &rhs) : BranchMeta(rhs)
+  NativeCDMeta();
+  NativeCDMeta(const NativeCDMeta &rhs) : BranchMeta(rhs)
   {
   }
 
@@ -2000,23 +2089,26 @@ public:
 
 /*------------------------*/
 
-class CalloutCsiMeta : public BranchMeta
+class SettingsMeta : public BranchMeta
 {
 public:
-  PlacementMeta placement;
-  MarginsMeta   margin;
+  PlacementMeta        placement;
+  MarginsMeta          margin;
 
   // assem image scale
   FloatMeta            modelScale;
   // assem native camera position
-  CameraDistFactorMeta cameraDistNative;
+  FloatMeta            cameraDistance;
   FloatMeta            cameraFoV;
   FloatPairMeta        cameraAngles;
   FloatMeta            znear;
   FloatMeta            zfar;
+  BoolMeta             isOrtho;
+  StringMeta           cameraName;
+  FloatXYZMeta         target;
 
-  CalloutCsiMeta();
-  CalloutCsiMeta(const CalloutCsiMeta &rhs) : BranchMeta(rhs)
+  SettingsMeta();
+  SettingsMeta(const SettingsMeta &rhs) : BranchMeta(rhs)
   {
   }
 
@@ -3072,18 +3164,14 @@ public:
   AnnotationStyleMeta  squareStyle;
 
   // pli image generation
-  CameraDistFactorMeta cameraDistNative;
   FloatMeta            cameraFoV;
   FloatPairMeta        cameraAngles;
-  IntMeta              distance;
+  FloatMeta            cameraDistance;
   FloatMeta            znear;
   FloatMeta            zfar;
-
-  // display step
-  FloatMeta            v_cameraFoV;
-  IntMeta              v_distance;
-  FloatMeta            v_znear;
-  FloatMeta            v_zfar;
+  BoolMeta             isOrtho;
+  StringMeta           cameraName;
+  FloatXYZMeta         target;
 
   RotStepMeta          rotStep;
   BoolMeta             showTopModel;
@@ -3149,26 +3237,14 @@ public:
   CsiAnnotationMeta     annotation;
 
   // image generation
-  CameraDistFactorMeta cameraDistNative;
+  FloatMeta            cameraDistance;
   FloatMeta            cameraFoV;
   FloatPairMeta        cameraAngles;
-  IntMeta              distance;
   FloatMeta            znear;
   FloatMeta            zfar;
-  // display step
-  FloatMeta            v_cameraFoV;
-  IntMeta              v_distance;
-  FloatMeta            v_znear;
-  FloatMeta            v_zfar;
-
-  CalloutCsiMeta       getCsiNativeCamMeta(){
-    CalloutCsiMeta       csi;
-    csi.modelScale       = modelScale;
-    csi.cameraDistNative = cameraDistNative;
-    csi.cameraFoV        = cameraFoV;
-    csi.cameraAngles     = cameraAngles;
-    return csi;
-  }
+  BoolMeta             isOrtho;
+  StringMeta           cameraName;
+  FloatXYZMeta         target;
 
   AssemMeta();
   AssemMeta(const AssemMeta &rhs) : BranchMeta(rhs)
@@ -3191,7 +3267,7 @@ public:
   PlacementMeta  placement;     // outside
 
   MarginsMeta         margin;
-  CalloutCsiMeta      csi;
+  SettingsMeta        csi;
   CalloutPliMeta      pli;
   RotateIconMeta      rotateIcon;
   NumberPlacementMeta stepNum;
@@ -3230,7 +3306,7 @@ public:
   // bot    == bottom of multistep
   PlacementMeta       placement;
   MarginsMeta         margin;
-  CalloutCsiMeta      csi;
+  SettingsMeta        csi;
   CalloutPliMeta      pli;
   MultiStepSubModelMeta subModel;
   RotateIconMeta      rotateIcon;
@@ -3348,7 +3424,7 @@ public:
   ContStepNumMeta      contStepNumbers;
   IntMeta              contModelStepNum;
   StepPliMeta          stepPli;
-  CameraDistFactorMeta cameraDistNative;
+  NativeCDMeta         nativeCD;
 
   LPubMeta();
 //  virtual ~LPubMeta() {}

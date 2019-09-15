@@ -809,6 +809,8 @@ public:
 
 public slots:
   //**3D Viewer Manage Step Rotation
+  void Disable3DActions();
+  void Enable3DActions();
 
   void ShowStepRotationStatus();
   void SetRotStepMeta();
@@ -986,6 +988,10 @@ public slots:
   void showCoordinates();
   void gridSize(int index);
   void gridSizeTriggered();
+  void setTargetPosition();
+
+  void showDefaultCameraProperties();
+  void applyCameraSettings();
 
   void clearPLICache();
   void clearCSICache();
@@ -1389,6 +1395,7 @@ private slots:
     void disableActions2();
 
     void partsWidgetVisibilityChanged(bool);
+    void coloursWidgetVisibilityChanged(bool);
 
     void exportToolBarVisibilityChanged(bool);
     void cacheToolBarVisibilityChanged(bool);
@@ -1413,10 +1420,14 @@ private:
   /* Initialization stuff */
 
   void createActions();
+  void create3DActions();
   void createMenus();
+  void create3DMenus();
   void createToolBars();
+  void create3DToolBars();
   void createStatusBar();
   void createDockWindows();
+  void create3DDockWindows();
   void readSettings();
   void writeSettings();
 
@@ -1446,6 +1457,8 @@ private:
   QMenu    *sceneRulerTrackingMenu;
   QMenu    *zoomSliderMenu;
   QMenu    *sceneGuidesMenu;
+
+  QMenu    *cameraMenu;
 
   // 3D Viewer Menus
   QMenu* ViewerMenu;
@@ -1542,6 +1555,8 @@ private:
   QAction  *showTrackingCoordinatesAct;
   QAction  *showGuidesCoordinatesAct;
 
+  QAction  *defaultCameraPropertiesAct;
+
   QActionGroup* SceneGuidesPosGroup;
   QActionGroup* SceneGuidesLineGroup;
   QActionGroup* SceneRulerGroup;
@@ -1613,6 +1628,9 @@ private:
 
   QAction *snapGridActions[NUM_GRID_SIZES];
   QAction *snapToGridComboAct;
+
+  QAction *applyCameraAct;
+  QAction *setTargetPositionAct;
 
   // help
 

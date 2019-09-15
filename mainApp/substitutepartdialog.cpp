@@ -178,13 +178,6 @@ void SubstitutePartDialog::initialize()
 
     ui->extendedSettingsBox->setVisible(show);
 
-    if (Preferences::usingNativeRenderer){
-        ui->horizontalSpacer_12->changeSize(18,20,QSizePolicy::Fixed,QSizePolicy::Fixed);
-        ui->scale_Lbl->setText("Distance Factor:");
-        min = -5000;
-        max = 5000;
-        step = 10.0;
-    }
     if (show)
         val = mAttributes.at(sModelScale).toDouble();
     ui->scaleSpin->setRange(min,max);
@@ -266,8 +259,7 @@ void SubstitutePartDialog::reset(bool value)
 void SubstitutePartDialog::valueChanged(double value)
 {
     if (sender() == ui->scaleSpin) {
-            mAttributes[sModelScale] = Preferences::usingNativeRenderer ?
-                        QString::number(int(value)) : QString::number(value);
+            mAttributes[sModelScale] = QString::number(value);
     } else
     if (sender() == ui->fovSpin) {
             mAttributes[sCameraFoV] = QString::number(value);

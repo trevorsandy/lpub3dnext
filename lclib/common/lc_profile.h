@@ -75,6 +75,9 @@ enum LC_PROFILE_KEY
 	LC_PROFILE_POVRAY_WIDTH,
 	LC_PROFILE_POVRAY_HEIGHT,
 
+/*** LPub3D Mod - Camera Globe Target Position ***/
+	LC_PROFILE_SET_TARGET_POSITION,
+/*** LPub3D Mod end ***/
 /*** LPub3D Mod - Update Default Camera ***/
 	LC_PROFILE_DEFAULT_CAMERA_PROPERTIES,
 /*** LPub3D Mod end ***/

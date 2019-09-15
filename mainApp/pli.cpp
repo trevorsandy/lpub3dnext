@@ -429,12 +429,7 @@ void Pli::setParts(
               return groupMeta;
           };
 
-          qreal modelScale = 1.0;
-          if (Preferences::usingNativeRenderer) {
-              modelScale = double(pliMeta.cameraDistNative.factor.value());
-          } else {
-              modelScale = double(pliMeta.modelScale.value());
-          }
+          float modelScale = pliMeta.modelScale.value();
 
           bool noCA = pliMeta.rotStep.value().type == "ABS";
 
@@ -760,12 +755,7 @@ int Pli::createSubModelIcons()
 
         QString key = QString("%1_%2").arg(baseName).arg(color);
 
-        float modelScale = 1.0;
-        if (Preferences::usingNativeRenderer) {
-            modelScale = pliMeta.cameraDistNative.factor.value();
-        } else {
-            modelScale = pliMeta.modelScale.value();
-        }
+        float modelScale  = pliMeta.modelScale.value();
 
         bool noCA = pliMeta.rotStep.value().type == "ABS";
 
@@ -2908,38 +2898,31 @@ void PliBackgroundItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 void PliBackgroundItem::contextMenuEvent(
         QGraphicsSceneContextMenuEvent *event)
 {
-    if (pli) {
-        QMenu menu;
-        bool showCameraDistFactorItem = (Preferences::usingNativeRenderer);
+  if (pli) {
+      QMenu menu;
 
         PlacementData placementData = pli->placement.value();
 
-        QString pl = pli->bom ? "Bill Of Materials" : "Parts List";
-        QAction *placementAction  = commonMenus.placementMenu(menu,pl,
-                                                              commonMenus.naturalLanguagePlacementWhatsThis(PartsListType,placementData,pl));
-        QAction *scaleAction = nullptr;
-        if (!showCameraDistFactorItem){
-            scaleAction              = commonMenus.scaleMenu(menu, pl);
-        }
-        QAction *constrainAction     = commonMenus.constrainMenu(menu,pl);
-        QAction *backgroundAction    = commonMenus.backgroundMenu(menu,pl);
-        QAction *subModelColorAction = commonMenus.subModelColorMenu(menu,pl);
-        QAction *borderAction        = commonMenus.borderMenu(menu,pl);
-        QAction *marginAction        = commonMenus.marginMenu(menu,pl);
-        QAction *pliPartGroupAction  = nullptr;
-        if (pli->pliMeta.enablePliPartGroup.value()) {
-            pliPartGroupAction = commonMenus.partGroupsOffMenu(menu,"Part");
-        } else {
-            pliPartGroupAction = commonMenus.partGroupsOnMenu(menu,"Part");
-        }
-        QAction *sortAction          = commonMenus.sortMenu(menu,pl);
-        QAction *annotationAction    = commonMenus.annotationMenu(menu,pl);
-        QAction *cameraDistFactorAction = nullptr;
-        if (showCameraDistFactorItem){
-            cameraDistFactorAction   = commonMenus.cameraDistFactorrMenu(menu, pl);
-        }
-        QAction *cameraFoVAction     = commonMenus.cameraFoVMenu(menu,pl);
-        QAction *cameraAnglesAction  = commonMenus.cameraAnglesMenu(menu,pl);
+      QString pl = pli->bom ? "Bill Of Materials" : "Parts List";
+      QAction *placementAction  = commonMenus.placementMenu(menu,pl,
+                                                            commonMenus.naturalLanguagePlacementWhatsThis(PartsListType,placementData,pl));
+      QAction *constrainAction     = commonMenus.constrainMenu(menu,pl);
+      QAction *backgroundAction    = commonMenus.backgroundMenu(menu,pl);
+      QAction *subModelColorAction = commonMenus.subModelColorMenu(menu,pl);
+      QAction *borderAction        = commonMenus.borderMenu(menu,pl);
+      QAction *marginAction        = commonMenus.marginMenu(menu,pl);
+      QAction *pliPartGroupAction  = nullptr;
+      if (pli->pliMeta.enablePliPartGroup.value()) {
+          pliPartGroupAction = commonMenus.partGroupsOffMenu(menu,"Part");
+      } else {
+          pliPartGroupAction = commonMenus.partGroupsOnMenu(menu,"Part");
+      }
+      QAction *sortAction          = commonMenus.sortMenu(menu,pl);
+      QAction *annotationAction    = commonMenus.annotationMenu(menu,pl);
+
+      QAction *cameraAnglesAction  = commonMenus.cameraAnglesMenu(menu,pl);
+      QAction *scaleAction         = commonMenus.scaleMenu(menu, pl);
+      QAction *cameraFoVAction     = commonMenus.cameraFoVMenu(menu,pl);
 
         QAction *splitBomAction  = nullptr;
         QAction *deleteBomAction = nullptr;
@@ -3067,16 +3050,10 @@ void PliBackgroundItem::contextMenuEvent(
                                 &pli->pliMeta.subModelColor);
 
         } else if (selectedAction == borderAction) {
-            changeBorder(me+" Border",
-                         top,
-                         bottom,
-                         &pli->pliMeta.border);
-        } else if (selectedAction == cameraDistFactorAction) {
-            changeCameraDistFactor(pl+" Camera Distance",
-                                   "Native Camera Distance",
-                                   top,
-                                   bottom,
-                                   &pli->pliMeta.cameraDistNative.factor);
+          changeBorder(me+" Border",
+                       top,
+                       bottom,
+                       &pli->pliMeta.border);
         } else if (selectedAction == scaleAction){
             changeFloatSpin(pl+" Scale",
                             "Model Size",
@@ -3397,14 +3374,10 @@ void PGraphicsPixmapItem::contextMenuEvent(
   if (pli->pliMeta.enablePliPartGroup.value())
       resetPartGroupAction = commonMenus.resetPartGroupMenu(menu,pl);
 
-  /*
-  QAction *scaleAction;
-  if (Preferences::usingNativeRenderer)
-      scaleAction = commonMenus.cameraAnglesMenu(menu,pl);
-  else
-      scaleAction = commonMenus.scaleMenu(menu,pl);
-  QAction *cameraFoVAction    = commonMenus.cameraFoVMenu(menu,pl);
-  */
+// Manipulate individual PLI images
+//  QAction *cameraAnglesAction  = commonMenus.cameraAnglesMenu(menu,pl);
+//  QAction *scaleAction         = commonMenus.scaleMenu(menu, pl);
+//  QAction *cameraFoVAction     = commonMenus.cameraFoVMenu(menu,pl);
 
   Where top;
   Where bottom;
@@ -3443,14 +3416,9 @@ void PGraphicsPixmapItem::contextMenuEvent(
     } else if (selectedAction == substitutePartAction) {
       QStringList defaultList;
       if (this->part->subType/*sUpdate*/) {
-          qreal modelScale = 1.0;
-          if (Preferences::usingNativeRenderer) {
-              modelScale = double(this->pli->pliMeta.cameraDistNative.factor.value());
-          } else {
-              modelScale = double(this->pli->pliMeta.modelScale.value());
-          }
+          float modelScale = this->pli->pliMeta.modelScale.value();
           bool noCA = this->pli->pliMeta.rotStep.value().type == "ABS";
-          defaultList.append(QString::number(modelScale));
+          defaultList.append(QString::number(double(modelScale)));
           defaultList.append(QString::number(double(this->pli->pliMeta.cameraFoV.value())));
           defaultList.append(QString::number(noCA ? 0.0 : double(this->pli->pliMeta.cameraAngles.value(0))));
           defaultList.append(QString::number(noCA ? 0.0 : double(this->pli->pliMeta.cameraAngles.value(1))));
@@ -3464,14 +3432,17 @@ void PGraphicsPixmapItem::contextMenuEvent(
       if (attributes.size() == 6 /*nameKey - removals*/)
           attributes.append(QString(renderer->getRotstepMeta(this->pli->pliMeta.rotStep,true)).split("_"));
       substitutePLIPart(attributes,this->part->instances,this->part->subType ? sUpdate : sSubstitute,defaultList);
-    } /* else if (selectedAction == scaleAction) {
-        changeFloatSpin(pl,
-                        "Model Size",
-                        top,
-                        bottom,
-                        Preferences::usingNativeRenderer ?
-                        &pli->pliMeta.cameraAngles :
-                        &pli->pliMeta.modelScale);
+  } /*else if (selectedAction == cameraAnglesAction) {
+      changeCameraAngles(pl+" Camera Angles",
+                      top,
+                      bottom,
+                      &pli->pliMeta.cameraAngles);
+  } else if (selectedAction == scaleAction) {
+     changeFloatSpin(pl,
+                     "Model Size",
+                     top,
+                     bottom,
+                     &pli->pliMeta.modelScale);
   } else if (selectedAction == cameraFoVAction) {
     changeFloatSpin(pl,
                     "Camera FOV",

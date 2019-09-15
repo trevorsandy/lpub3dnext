@@ -1676,7 +1676,7 @@ void HighlightStepGui::apply(
 
 CameraDistFactorGui::CameraDistFactorGui(
         QString const &heading,
-        CameraDistFactorMeta *_meta,
+        NativeCDMeta *_meta,
         QGroupBox  *parent)
 {
 
@@ -1690,7 +1690,7 @@ CameraDistFactorGui::CameraDistFactorGui(
       setLayout(hLayout);
   }
 
-  QString tipMessage = QString("Native renderer camera distance factor, adjust by 10, to scale renderings.");
+  QString tipMessage = QString("Adjust to change the default Native camera distance.");
 
   if (heading != "") {
     cameraDistFactorLabel = new QLabel(heading, parent);
@@ -3239,7 +3239,7 @@ void ResolutionGui::apply(QString &modelName)
  **********************************************************************/
 
 RendererGui::RendererGui(
-  CameraDistFactorMeta *_meta,
+  NativeCDMeta *_meta,
   QGroupBox     *parent)
 {
   meta = _meta;
@@ -3307,14 +3307,10 @@ RendererGui::RendererGui(
   hLayout->addWidget(ldvButton);
 
   QGridLayout *grpGrid = new QGridLayout();
-  cameraDistFactorGrpBox = new QGroupBox("Native Renderer Camera Distance",parent);
+  cameraDistFactorGrpBox = new QGroupBox("3DViewer/Native Renderer Camera Distance",parent);
 
-  bool nativeRenderer = (Render::getRenderer() == RENDERER_NATIVE);
-  QString tipMessage = QString("Native renderer camera distance factor - enabled when Renderer is set to Native.");
-  if (nativeRenderer)
-      tipMessage = QString("Native renderer camera distance factor, adjust by 10, to scale renderings.");
+  QString tipMessage = QString("Adjust to change the default Native camera distance.");
   cameraDistFactorGrpBox->setToolTip(tipMessage);
-  cameraDistFactorGrpBox->setEnabled(nativeRenderer);
   cameraDistFactorGrpBox->setLayout(grpGrid);
   grid->addWidget(cameraDistFactorGrpBox,3,0,1,2);
 
@@ -3331,17 +3327,15 @@ RendererGui::RendererGui(
   grpGrid->addWidget(cameraDistFactorSpin,0,1);
 
   QSettings Settings;
-  cameraDistFactorDefaulSettings = Settings.contains(QString("%1/%2").arg(SETTINGS,"cameraDistFactorNative"));
+  cameraDistFactorDefaulSetting = Settings.contains(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"));
   cameraDistFactorDefaultBox = new QCheckBox("Set as default",cameraDistFactorGrpBox);
-  cameraDistFactorDefaultBox->setEnabled(nativeRenderer);
   cameraDistFactorDefaultBox->setToolTip("Save to application settings.");
-  cameraDistFactorDefaultBox->setChecked(cameraDistFactorDefaulSettings);
+  cameraDistFactorDefaultBox->setChecked(cameraDistFactorDefaulSetting);
   grpGrid->addWidget(cameraDistFactorDefaultBox,1,0);
 
   cameraDistFactorMetaBox = new QCheckBox("Add meta command",cameraDistFactorGrpBox);
-  cameraDistFactorMetaBox->setEnabled(nativeRenderer);
   cameraDistFactorMetaBox->setToolTip("Add a global meta command to the LDraw file.");
-  cameraDistFactorMetaBox->setChecked(!cameraDistFactorDefaulSettings);
+  cameraDistFactorMetaBox->setChecked(!cameraDistFactorDefaulSetting);
   grpGrid->addWidget(cameraDistFactorMetaBox,1,1);
 
   clearCaches              = false;
@@ -3388,26 +3382,17 @@ void RendererGui::typeChange(QString const &type)
   pick = type;
   ldvSingleCallBox->setEnabled(pick == RENDERER_LDVIEW);
   povFileGeneratorGrpBox->setEnabled(pick == RENDERER_POVRAY);
-  cameraDistFactorGrpBox->setEnabled(pick == RENDERER_NATIVE);
-  if (pick != RENDERER_LDVIEW) {
-      ldvSingleCallBox->setChecked(false);
-    }
-  QString tipMessage = QString("Native renderer camera distance factor - enabled when Renderer is set to Native.");
-  if (pick == RENDERER_NATIVE) {
-      cameraDistFactorDefaultBox->setEnabled(true);
-      cameraDistFactorMetaBox->setEnabled(true);
-      tipMessage = QString("Native renderer camera distance factor, adjust by 10, to scale renderings.");
-    }
-  cameraDistFactorGrpBox->setToolTip(tipMessage);
   if (pick != Preferences::preferredRenderer) {
       modified = rendererModified = true;
-    }
+   }
 }
 
 void RendererGui::cameraDistFactorChange(int factor)
 {
   meta->factor.setValue(factor);
-  clearCaches = cameraDistFactorModified = true;
+  cameraDistFactorModified = true;
+  if (Preferences::usingNativeRenderer)
+      clearCaches = true;
 }
 
 void RendererGui::apply(QString &topLevelFile)
@@ -3449,24 +3434,26 @@ void RendererGui::apply(QString &topLevelFile)
       Settings.setValue(QString("%1/%2").arg(SETTINGS,"POVFileGenerator"),povFileGenChoice);
     }
   if (cameraDistFactorModified) {
-      changeMessage = QString("Native camera distance factor changed from %1 to %2")
-                      .arg(cameraDistFactorNative)
-                      .arg(meta->factor.value());
-      emit gui->messageSig(LOG_INFO, changeMessage);
-      Preferences::cameraDistFactorNative = meta->factor.value();
-      if (cameraDistFactorDefaultBox->isChecked()){
-          changeMessage = QString("Factor added as application default.");
-          emit gui->messageSig(LOG_INFO, changeMessage);
-          Settings.setValue(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"),meta->factor.value());
-        } else
-        if (cameraDistFactorDefaulSettings) {
-            Settings.remove(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"));
-         }
+      if (!cameraDistFactorDefaultBox->isChecked() &&
+          !cameraDistFactorMetaBox->isChecked())
+          cameraDistFactorDefaultBox->setChecked(true);
       if (cameraDistFactorMetaBox->isChecked()){
+          if (cameraDistFactorDefaulSetting) {
+              Settings.remove(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"));
+          }
           MetaItem mi;
           mi.setGlobalMeta(topLevelFile,&meta->factor);
-        }
-    }
+      }
+      else
+      if (cameraDistFactorDefaultBox->isChecked()){
+          Preferences::cameraDistFactorNative = meta->factor.value();
+          Settings.setValue(QString("%1/%2").arg(SETTINGS,"CameraDistFactorNative"),meta->factor.value());
+          changeMessage = QString("Native camera distance factor changed from %1 to %2")
+                                  .arg(cameraDistFactorNative)
+                                  .arg(meta->factor.value());
+          emit gui->messageSig(LOG_INFO, changeMessage);
+      }
+  }
   if (!modified && clearCaches){
       clearPliCache();
       clearCsiCache();
