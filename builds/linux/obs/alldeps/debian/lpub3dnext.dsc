@@ -2,7 +2,7 @@ Format: 1.0
 Source: lpub3dnext
 Binary: lpub3dnext
 Architecture: any
-Version: 2.3.13.5
+Version: 2.3.13.6
 Maintainer: Trevor SANDY <trevor.sandy@gmail.com>
 Homepage: https://trevorsandy.github.io/lpub3dnext/
 Standards-Version: 3.9.7
