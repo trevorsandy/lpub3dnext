@@ -187,7 +187,7 @@ void PreviewWidget::DrawViewport()
     if (true/*we have an active view*/)
     {
         mContext->SetMaterial(lcMaterialType::UnlitColor);
-        mContext->SetColor(lcVector4FromColor(lcGetPreferences().mActivePreviewColor));
+        mContext->SetColor(lcVector4FromColor(lcGetPreferences().mPreviewActiveColor));
         float Verts[8] = { 0.0f, 0.0f, mWidth - 1.0f, 0.0f, mWidth - 1.0f, mHeight - 1.0f, 0.0f, mHeight - 1.0f };
 
         mContext->SetVertexBufferPointer(Verts);

@@ -81,9 +81,15 @@ void lcPreferences::LoadDefaults()
 /*** LPub3D Mod end ***/
 
 /*** LPub3D Mod - preview widget ***/
-	mActivePreviewColor = lcGetProfileInt(LC_PROFILE_ACTIVE_PREVIEW_COLOR);
-	mViewSpherePreviewSize = lcGetProfileInt(LC_PROFILE_VIEW_SPHERE_PREVIEW_SIZE);
-	mViewSpherePreviewLocation = static_cast<lcViewSphereLocation>(lcGetProfileInt(LC_PROFILE_VIEW_SPHERE_PREVIEW_LOCATION));
+	mPreviewActiveColor = lcGetProfileInt(LC_PROFILE_PREVIEW_ACTIVE_COLOR);
+    mPreviewViewSphereEnabled = lcGetProfileInt(LC_PROFILE_PREVIEW_VIEW_SPHERE_ENABLED);
+	mPreviewViewSphereSize = lcGetProfileInt(LC_PROFILE_PREVIEW_VIEW_SPHERE_SIZE);
+	mPreviewViewSphereLocation = static_cast<lcViewSphereLocation>(lcGetProfileInt(LC_PROFILE_PREVIEW_VIEW_SPHERE_LOCATION));
+    mPreviewEnabled  = lcGetProfileInt(LC_PROFILE_PREVIEW_ENABLED);
+    mPreviewSize     = lcGetProfileInt(LC_PROFILE_PREVIEW_SIZE);
+    mPreviewLocation = static_cast<lcPreviewLocation>(lcGetProfileInt(LC_PROFILE_PREVIEW_LOCATION));
+    mPreviewPosition = static_cast<lcPreviewPosition>(lcGetProfileInt(LC_PROFILE_PREVIEW_POSITION));
+    mDrawPreviewAxis = lcGetProfileInt(LC_PROFILE_PREVIEW_DRAW_AXES);
 /*** LPub3D Mod end ***/
 /*** LPub3D Mod - Selected Parts ***/
 	mBuildMofificationEnabled = lcGetProfileInt(LC_PROFILE_BUILD_MODIFICATION);
@@ -150,9 +156,15 @@ void lcPreferences::SaveDefaults()
 /*** LPub3D Mod end ***/
 
 /*** LPub3D Mod - preview widget ***/
-	lcSetProfileInt(LC_PROFILE_ACTIVE_PREVIEW_COLOR, mActivePreviewColor);
-	lcSetProfileInt(LC_PROFILE_VIEW_SPHERE_PREVIEW_SIZE, mViewSpherePreviewSize);
-	lcSetProfileInt(LC_PROFILE_VIEW_SPHERE_PREVIEW_LOCATION, static_cast<int>(mViewSpherePreviewLocation));
+	lcSetProfileInt(LC_PROFILE_PREVIEW_ACTIVE_COLOR, mPreviewActiveColor);
+    lcSetProfileInt(LC_PROFILE_PREVIEW_ENABLED, mPreviewViewSphereEnabled);
+	lcSetProfileInt(LC_PROFILE_PREVIEW_VIEW_SPHERE_SIZE, mPreviewViewSphereSize);
+	lcSetProfileInt(LC_PROFILE_PREVIEW_VIEW_SPHERE_LOCATION, static_cast<int>(mPreviewViewSphereLocation));
+    lcSetProfileInt(LC_PROFILE_PREVIEW_ENABLED, mPreviewEnabled);
+    lcSetProfileInt(LC_PROFILE_PREVIEW_SIZE, mPreviewSize);
+    lcSetProfileInt(LC_PROFILE_PREVIEW_LOCATION, static_cast<int>(mPreviewLocation));
+    lcSetProfileInt(LC_PROFILE_PREVIEW_POSITION, static_cast<int>(mPreviewPosition));
+    lcSetProfileInt(LC_PROFILE_PREVIEW_DRAW_AXES, mDrawPreviewAxis);
 /*** LPub3D Mod end ***/
 /*** LPub3D Mod - Selected Parts ***/
 	lcSetProfileInt(LC_PROFILE_BUILD_MODIFICATION, mBuildMofificationEnabled);
