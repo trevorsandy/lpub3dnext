@@ -3855,16 +3855,26 @@ void Gui::countPages()
   if (maxPages < 1) {
       emit messageSig(LOG_TRACE, "Counting pages...");
       QFuture<int> future = QtConcurrent::run(WriteToTmpWorker::writeToTmp);
-      Where current(ldrawFile.topLevelFile(),0);
-      int savedDpn     =  displayPageNum;
-      displayPageNum   =  1 << 31;  // really large number: 2147483648
-      firstStepPageNum = -1;
-      lastStepPageNum  = -1;
-      maxPages         =  1;
+      current              = Where(ldrawFile.topLevelFile(),0);
+      saveDisplayPageNum   = displayPageNum;
+      displayPageNum       =  1 << 31;  // really large number: 2147483648 so we, hopefully, never fire drawPage(...)
+
+      maxPages             =  1;
+      stepPageNum          =  1;
+
+      firstStepPageNum     = -1;
+      lastStepPageNum      = -1;
+      saveStepPageNum      =  0;
+      savePrevStepPosition =  0;
+      saveGroupStepNum     =  0;
+      saveContStepNum      =  1;
+
       Meta meta;
+      LGraphicsView  *nullView  = nullptr;
+      LGraphicsScene *nullScene = nullptr;
       QString empty;
       PgSizeData emptyPageSize;
-      stepPageNum = 1;
+
       FindPageOptions findOptions(
                   maxPages,
                   current,
@@ -3877,92 +3887,81 @@ void Gui::countPages()
                   0              /*contStepNumber*/,
                   0              /*groupStepNumber*/,
                   empty          /*renderParentModel*/);
-      findPage(KpageView,KpageScene,meta,empty/*addLine*/,findOptions);
-      topOfPages.append(current);
-      maxPages--;
-
-      if (displayPageNum > maxPages) {
-          displayPageNum = maxPages;
-        } else {
-          displayPageNum = savedDpn;
-        }
 
       // as we are only counting view and scene are not needed so we pass null
       future = QtConcurrent::run(FindPageWorker::findPage,nullView,nullScene,meta,empty/*addLine*/,&findOptions);
       futureWatcher.setFuture(future);
       QCoreApplication::processEvents();
-      }
    }
 }
 
 void Gui::drawPage(
-    LGraphicsView  *view,
-    LGraphicsScene *scene,
-    bool            printing,
-    bool            updateViewer/*true*/,
-    bool            buildMod/*false*/)
+        LGraphicsView  *view,
+        LGraphicsScene *scene,
+        bool            printing,
+        bool            updateViewer/*true*/,
+        bool            buildMod/*false*/)
 {
-  QApplication::setOverrideCursor(Qt::WaitCursor);
+    QApplication::setOverrideCursor(Qt::WaitCursor);
 
-  Where current(ldrawFile.topLevelFile(),0);
+    current     = Where(ldrawFile.topLevelFile(),0);
+    maxPages    = 1;
+    stepPageNum = 1;
 
-  maxPages    = 1;
-  stepPageNum = 1;
+    // if not buildMod action
+    if (! buildMod) {
+        // initialize ldrawFile registers
+        ldrawFile.unrendered();
+        ldrawFile.countInstances();
+        ldrawFile.setModelStartPageNumber(current.modelName,maxPages);
 
-  // if not buildMod action
-  if (! buildMod) {
-      // initialize ldrawFile registers
-      ldrawFile.unrendered();
-      ldrawFile.countInstances();
-      ldrawFile.setModelStartPageNumber(current.modelName,maxPages);
-
-      // Set BuildMod action options for next step
-      int displayPageIndx = exporting() ? displayPageNum : displayPageNum - 1;
-      if (Preferences::buildModEnabled) {
-          bool displayPageIndxOk = topOfPages.size() && topOfPages.size() >= displayPageIndx;
-          QElapsedTimer t; t.start();
+        // Set BuildMod action options for next step
+        int displayPageIndx = exporting() ? displayPageNum : displayPageNum - 1;
+        if (Preferences::buildModEnabled) {
+            bool displayPageIndxOk = topOfPages.size() && topOfPages.size() >= displayPageIndx;
+            Where here = displayPageIndxOk ? topOfPages[displayPageIndx] : current;
+            QElapsedTimer t; t.start();
             QFuture<bool> future = QtConcurrent::run(BuildModWorker::setBuildMod,here,Where(),Where(),false,false);
             future.waitForFinished();
             emit messageSig(LOG_DEBUG,QString("Build modifications check - %1").arg(elapsedTime(t.elapsed())));
-          emit messageSig(LOG_DEBUG,QString("Build modifications check - %1")
-                                            .arg(elapsedTime(t.elapsed())));
-      }
-  }
+        }
+    }
 
     QFuture<int> future = QtConcurrent::run(WriteToTmpWorker::writeToTmp);
     future.waitForFinished();
 
-  //logTrace() << "SET INITIAL Model: " << current.modelName << " @ Page: " << maxPages;
-  QString empty;
-  Meta    meta;
-  firstStepPageNum = -1;
-  lastStepPageNum  = -1;
-  savePrevStepPosition = 0;
-  saveGroupStepNum = 0;
-  saveContStepNum = 1;
+    //logTrace() << "SET INITIAL Model: " << current.modelName << " @ Page: " << maxPages;
+    QString empty;
+    Meta    meta;
+    firstStepPageNum     = -1;
+    lastStepPageNum      = -1;
+    saveStepPageNum      =  0;
+    savePrevStepPosition =  0;
+    saveGroupStepNum     =  0;
+    saveContStepNum      =  1;
 
-  enableLineTypeIndexes = true;
+    enableLineTypeIndexes = true;
 
-  PgSizeData pageSize;
-  if (exporting()) {
-      pageSize.sizeW      = meta.LPub.page.size.valueInches(0);
-      pageSize.sizeH      = meta.LPub.page.size.valueInches(1);
-      pageSize.sizeID     = meta.LPub.page.size.valueSizeID();
-      pageSize.orientation= meta.LPub.page.orientation.value();
-      pageSizes.insert(     DEF_SIZE,pageSize);
+    PgSizeData pageSize;
+    if (exporting()) {
+        pageSize.sizeW      = meta.LPub.page.size.valueInches(0);
+        pageSize.sizeH      = meta.LPub.page.size.valueInches(1);
+        pageSize.sizeID     = meta.LPub.page.size.valueSizeID();
+        pageSize.orientation= meta.LPub.page.orientation.value();
+        pageSizes.insert(     DEF_SIZE,pageSize);
 #ifdef SIZE_DEBUG
-      logTrace() << "0. Inserting INIT page size info    at PageNumber:" << DEF_SIZE
-                 << "W:"  << pageSize.sizeW << "H:"    << pageSize.sizeH
-                 << "O:"  << (pageSize.orientation == Portrait ? "Portrait" : "Landscape")
-                 << "ID:" << pageSize.sizeID
-                 << "Model:" << current.modelName;
+        logTrace() << "0. Inserting INIT page size info    at PageNumber:" << DEF_SIZE
+                   << "W:"  << pageSize.sizeW << "H:"    << pageSize.sizeH
+                   << "O:"  << (pageSize.orientation == Portrait ? "Portrait" : "Landscape")
+                   << "ID:" << pageSize.sizeID
+                   << "Model:" << current.modelName;
 #endif
     }
 
-  FindPageOptions findOptions(
-              maxPages,
-              current,
-              pageSize,
+    FindPageOptions findOptions(
+                maxPages,
+                current,
+                pageSize,
                 updateViewer,
                 false        /*mirrored*/,
                 printing,
@@ -3970,18 +3969,26 @@ void Gui::drawPage(
                 0            /*buildModLevel*/,
                 0            /*contStepNumber*/,
                 0            /*groupStepNumber*/,
-              empty        /*renderParentModel*/);
-  if (findPage(view,scene,meta,empty/*addLine*/,findOptions) == HitBuildModAction && Preferences::buildModEnabled) {
-      QApplication::restoreOverrideCursor();
-      clearPage(KpageView,KpageScene);
-      drawPage(view,scene,printing,updateViewer,true/*buildMod*/);
-  } else {
+                empty        /*renderParentModel*/);
+    if (findPage(view,scene,meta,empty/*addLine*/,findOptions) == HitBuildModAction && Preferences::buildModEnabled) {
+        QApplication::restoreOverrideCursor();
+        clearPage(KpageView,KpageScene);
+        drawPage(view,scene,printing,updateViewer,true/*buildMod*/);
+
+    } else {
 
         LGraphicsView  *nullView  = nullptr;
         LGraphicsScene *nullScene = nullptr;
         QFuture<int> future = QtConcurrent::run(FindPageWorker::findPage,nullView,nullScene,meta,empty/*addLine*/,&findOptions);
         futureWatcher.setFuture(future);
         QCoreApplication::processEvents();
+
+        setCurrentStep();
+
+        QApplication::restoreOverrideCursor();
+    }
+}
+
 void Gui::pagesCounted()
 {
     topOfPages.append(current);
@@ -3993,11 +4000,11 @@ void Gui::pagesCounted()
     emit messageSig(LOG_NOTICE, QString("DrawPage StepIndex"));
     for (int i = 0; i < topOfPages.size(); i++)
     {
-          emit messageSig(LOG_NOTICE, QString("StepIndex: %1, SubmodelIndex: %2: LineNumber: %3, ModelName: %4")
-                                             .arg(i)                                            // index
-                                             .arg(getSubmodelIndex(topOfPages.at(i).modelName)) // modelIndex
-                                             .arg(topOfPages.at(i).lineNumber)                  // lineNumber
-                                             .arg(topOfPages.at(i).modelName));                 // modelName
+        emit messageSig(LOG_NOTICE, QString("StepIndex: %1, SubmodelIndex: %2: LineNumber: %3, ModelName: %4")
+                                           .arg(i)                                            // index
+                                           .arg(getSubmodelIndex(topOfPages.at(i).modelName)) // modelIndex
+                                           .arg(topOfPages.at(i).lineNumber)                  // lineNumber
+                                           .arg(topOfPages.at(i).modelName));                 // modelName
     }
 #endif
 */

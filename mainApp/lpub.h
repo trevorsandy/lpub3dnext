@@ -1491,6 +1491,8 @@ private:
 
   bool                   writingToTmp;
 
+  Where                  current;
+
   bool                   okToInvokeProgressBar()
   {
     return               (Preferences::lpub3dLoaded && Preferences::modeGUI && !exporting());
