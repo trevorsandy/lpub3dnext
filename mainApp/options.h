@@ -165,6 +165,7 @@ public:
             bool             _updateViewer,
             bool             _isMirrored,
             bool             _printing,
+            int              _mode,
             int              _buildModLevel,
             int              _contStepNumber,
             int              _groupStepNumber = 0,
@@ -177,6 +178,7 @@ public:
           updateViewer      (_updateViewer),
           isMirrored        (_isMirrored),
           printing          (_printing),
+          mode              (_mode),
           buildModLevel     (_buildModLevel),
           contStepNumber    (_contStepNumber),
           groupStepNumber   (_groupStepNumber),
@@ -189,6 +191,7 @@ public:
     bool           updateViewer;
     bool           isMirrored;
     bool           printing;
+    bool           mode;
     int            buildModLevel;
     int            contStepNumber;
     int            groupStepNumber;

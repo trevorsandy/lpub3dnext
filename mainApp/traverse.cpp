@@ -2512,6 +2512,7 @@ int Gui::findPage(
   bool pageSizeUpdate     = false;
   bool isPreDisplayPage   = true;
   bool isDisplayPage      = false;
+  bool pageDisplayed      = false;
 
   emit messageSig(LOG_STATUS, "Processing find page for " + opts.current.modelName + "...");
 
@@ -2610,7 +2611,7 @@ int Gui::findPage(
    */
 
   for ( ;
-        opts.current.lineNumber < numLines;
+        opts.current.lineNumber < numLines && (opts.mode ? !pageDisplayed : true);
         opts.current.lineNumber++) {
 
       // if reading include file, return to current line, do not advance
@@ -2721,6 +2722,7 @@ int Gui::findPage(
                                           opts.updateViewer,
                                           opts.isMirrored,
                                           opts.printing,
+                                          opts.mode,
                                           opts.buildModLevel,
                                           opts.contStepNumber,
                                           opts.groupStepNumber,
@@ -2910,6 +2912,7 @@ int Gui::findPage(
                                       .arg(QStringLiteral("%1").arg(opts.pageNum, 4, 10, QLatin1Char('0'))));
                       QApplication::processEvents();
                   }
+                  pageDisplayed = isDisplayPage;
                 } // StepGroup
               noStep2 = false;
               break;
@@ -3106,6 +3109,7 @@ int Gui::findPage(
                   saveCurrent = opts.current;  // so that draw page doesn't have to
                   // deal with steps that are not steps
                 }
+              pageDisplayed = isDisplayPage;
               noStep2 = noStep;
               noStep = false;
               break;
@@ -3390,6 +3394,7 @@ int Gui::findPage(
                           .arg(QStringLiteral("%1").arg(opts.pageNum, 4, 10, QLatin1Char('0'))));
           QApplication::processEvents();
       }
+      pageDisplayed = isDisplayPage;
     }  // Last Step in Submodel
   return 0;
 }
@@ -3863,6 +3868,7 @@ void Gui::countPages()
                   false          /*updateViewer*/,
                   false          /*mirrored*/,
                   false          /*printing*/,
+                  0              /*mode*/,
                   0              /*buildModLevel*/,
                   0              /*contStepNumber*/,
                   0              /*groupStepNumber*/,
@@ -3951,12 +3957,13 @@ void Gui::drawPage(
               maxPages,
               current,
               pageSize,
-              updateViewer,
-              false        /*mirrored*/,
-              printing,
-              0            /*buildModLevel*/,
-              0            /*contStepNumber*/,
-              0            /*groupStepNumber*/,
+                updateViewer,
+                false        /*mirrored*/,
+                printing,
+                1            /*mode*/,
+                0            /*buildModLevel*/,
+                0            /*contStepNumber*/,
+                0            /*groupStepNumber*/,
               empty        /*renderParentModel*/);
   if (findPage(view,scene,meta,empty/*addLine*/,findOptions) == HitBuildModAction && Preferences::buildModEnabled) {
       QApplication::restoreOverrideCursor();
