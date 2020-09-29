@@ -594,6 +594,10 @@ public:
   {
       return ldrawFile.getSubModels();
   }
+  QStringList contents(const QString &modelName)
+  {
+      return ldrawFile.contents(modelName);
+  }
   bool changedSinceLastWrite(QString &modelName)
   {
       return ldrawFile.changedSinceLastWrite(modelName);
@@ -1109,6 +1113,11 @@ public slots:
   void SelectedPartLines(QVector<TypeLine> &indexes, PartSource source);
   QStringList getViewerStepKeys(bool modelName = true, bool pliPart = false, const QString &key = "");
   void setViewerStepKey(const QString &stepKey, int notPliPart);
+
+  void setWritingToTmp(bool b)
+  {
+      writingToTmp = b;
+  }
 
   QString getViewerStepKey()
   {
