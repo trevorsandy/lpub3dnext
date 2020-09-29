@@ -49,6 +49,9 @@
 #include "pagepointer.h"
 #include "ranges_item.h"
 #include "separatorcombobox.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+#include <QtConcurrent>
+#endif
 
 #include "QsLog.h"
 
@@ -3850,7 +3853,7 @@ void Gui::countPages()
 {
   if (maxPages < 1) {
       emit messageSig(LOG_TRACE, "Counting pages...");
-      writeToTmp();
+      QFuture<int> future = QtConcurrent::run(WriteToTmpWorker::writeToTmp);
       Where current(ldrawFile.topLevelFile(),0);
       int savedDpn     =  displayPageNum;
       displayPageNum   =  1 << 31;  // really large number: 2147483648
@@ -3883,10 +3886,10 @@ void Gui::countPages()
           displayPageNum = savedDpn;
         }
 
-      if (Preferences::modeGUI && ! exporting()) {
-        QString string = QString("%1 of %2") .arg(displayPageNum) .arg(maxPages);
-        setPageLineEdit->setText(string);
-        statusBarMsg("");
+      // as we are only counting view and scene are not needed so we pass null
+      future = QtConcurrent::run(FindPageWorker::findPage,nullView,nullScene,meta,empty/*addLine*/,&findOptions);
+      futureWatcher.setFuture(future);
+      QCoreApplication::processEvents();
       }
    }
 }
@@ -3917,15 +3920,17 @@ void Gui::drawPage(
       if (Preferences::buildModEnabled) {
           bool displayPageIndxOk = topOfPages.size() && topOfPages.size() >= displayPageIndx;
           QElapsedTimer t; t.start();
-
-          setBuildModForNextStep(displayPageIndxOk ? topOfPages[displayPageIndx] : current);
-
+            QFuture<bool> future = QtConcurrent::run(BuildModWorker::setBuildMod,here,Where(),Where(),false,false);
+            future.waitForFinished();
+            emit messageSig(LOG_DEBUG,QString("Build modifications check - %1").arg(elapsedTime(t.elapsed())));
           emit messageSig(LOG_DEBUG,QString("Build modifications check - %1")
                                             .arg(elapsedTime(t.elapsed())));
       }
   }
 
-  writeToTmp();
+    QFuture<int> future = QtConcurrent::run(WriteToTmpWorker::writeToTmp);
+    future.waitForFinished();
+
   //logTrace() << "SET INITIAL Model: " << current.modelName << " @ Page: " << maxPages;
   QString empty;
   Meta    meta;
@@ -3970,6 +3975,12 @@ void Gui::drawPage(
       clearPage(KpageView,KpageScene);
       drawPage(view,scene,printing,updateViewer,true/*buildMod*/);
   } else {
+
+        LGraphicsView  *nullView  = nullptr;
+        LGraphicsScene *nullScene = nullptr;
+        QFuture<int> future = QtConcurrent::run(FindPageWorker::findPage,nullView,nullScene,meta,empty/*addLine*/,&findOptions);
+        futureWatcher.setFuture(future);
+        QCoreApplication::processEvents();
 void Gui::pagesCounted()
 {
     topOfPages.append(current);

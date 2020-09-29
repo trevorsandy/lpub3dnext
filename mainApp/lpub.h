@@ -1399,6 +1399,7 @@ protected:
   SceneObject            selectedItemObj;
 
 private:
+  QFutureWatcher<int> futureWatcher;
   LGraphicsScene        *KpageScene;         // top of displayed page's graphics items
   LGraphicsView         *KpageView;          // the visual representation of the scene
   LDrawFile              ldrawFile;          // contains MPD or all files used in model

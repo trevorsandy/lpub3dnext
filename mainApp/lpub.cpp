@@ -3006,6 +3006,8 @@ Gui::Gui()
         Preferences::systemEditor = QString("");
 #endif
 
+    connect(&futureWatcher, &QFutureWatcher<int>::finished, this, &Gui::pagesCounted);
+
     connect(lpubAlert,      SIGNAL(messageSig(LogType,QString)),
             this,           SLOT(statusMessage(LogType,QString)));
 
