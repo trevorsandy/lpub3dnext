@@ -21,6 +21,7 @@
 #include <QObject>
 #include <QRegExp>
 #include <QElapsedTimer>
+#include <QThread>
 
 #include "lpub_preferences.h"
 #include "ldrawfiles.h"
@@ -28,6 +29,9 @@
 #include "version.h"
 #include "ldsearchdirs.h"
 #include "name.h"
+
+#include "where.h"
+#include "meta.h"
 
 #include "QsLog.h"
 
@@ -349,8 +353,55 @@ protected:
     bool mEndWorkNow;
 };
 
-#endif // THREADWORKERS_H
+class BuildModWorker : public QObject
+{
+    Q_OBJECT
 
+public slots:
+    static bool setBuildMod(
+            const Where topOfNextStep,
+            Where bottomOfNextStep = Where(),
+            Where topOfSubmodel    = Where(),
+            bool change   = false,
+            bool submodel = false);
+protected:
+    static QStringList buildModSubmodels;
+};
+
+class WriteToTmpWorker : public QObject
+{
+    Q_OBJECT
+
+public slots:
+    static void writeToTmp(
+            const QString &fileName,
+            const QStringList &);
+    static int writeToTmp();
+protected:
+    static QStringList configureModelSubFile(
+            const QStringList &contents,
+            const QString     &fadeColour,
+            const PartType    partType);
+};
+
+class LGraphicsView;
+class LGraphicsScene;
+class FindPageOptions;
+class Meta;
+class FindPageWorker : public QObject
+{
+    Q_OBJECT
+
+public slots:
+    static int findPage(LGraphicsView   *view,
+            LGraphicsScene  *scene,
+            Meta             meta,
+            QString const   &addLine,
+            FindPageOptions &opts);
+};
+
+
+#endif // THREADWORKERS_H
 
 
 
