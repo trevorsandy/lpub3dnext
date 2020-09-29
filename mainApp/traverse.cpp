@@ -4788,7 +4788,7 @@ QStringList Gui::configureModelSubFile(const QStringList &contents, const QStrin
               QString fileNameStr = QString(argv[argv.size()-1]).toLower();
               QString extension = QFileInfo(fileNameStr).suffix().toLower();
               // static color parts
-              if (ldrawColourParts.isLDrawColourPart(fileNameStr)){
+              if (LDrawColourParts::isLDrawColourPart(fileNameStr)){
                   if (extension.isEmpty()) {
                     fileNameStr = fileNameStr.append(QString("%1.ldr").arg(nameMod));
                   } else {
@@ -4892,7 +4892,7 @@ QStringList Gui::configureModelStep(const QStringList &csiParts, const int &step
               extension = QFileInfo(fileNameStr).suffix().toLower();
 
               // check if is color part
-              is_colour_part = ldrawColourParts.isLDrawColourPart(fileNameStr);
+              is_colour_part = LDrawColourParts::isLDrawColourPart(fileNameStr);
 
               // check if is submodel
               is_submodel_file = ldrawFile.isSubmodel(fileNameStr);
@@ -5053,11 +5053,11 @@ QString Gui::createColourEntry(const QString &colourCode, const PartType partTyp
   QString _colourPrefix      = fadePartType ? LPUB3D_COLOUR_FADE_PREFIX : LPUB3D_COLOUR_HIGHLIGHT_PREFIX;  // fade prefix 100, highlight prefix 110
   QString _fadeColour        = LDrawColor::ldColorCode(page.meta.LPub.fadeStep.fadeColor.value());
   QString _colourCode        = _colourPrefix + (fadePartType ? Preferences::fadeStepsUseColour ? _fadeColour : colourCode : colourCode);
-  QString _mainColourValue   = "#" + ldrawColors.value(colourCode);
-  QString _edgeColourValue   = fadePartType ? "#" + ldrawColors.edge(colourCode) : Preferences::highlightStepColour;
-  QString _colourDescription = LPUB3D_COLOUR_TITLE_PREFIX + ldrawColors.name(colourCode);
-  int _fadeAlphaValue        = ((ldrawColors.alpha(colourCode) * (100 - Preferences::fadeStepsOpacity)) + (100 - 1)) / 100;
-  int _alphaValue            = fadePartType ? _fadeAlphaValue : ldrawColors.alpha(colourCode);             // use 100% opacity with highlight color
+  QString _mainColourValue   = "#" + LDrawColor::value(colourCode);
+  QString _edgeColourValue   = fadePartType ? "#" + LDrawColor::edge(colourCode) : Preferences::highlightStepColour;
+  QString _colourDescription = LPUB3D_COLOUR_TITLE_PREFIX + LDrawColor::name(colourCode);
+  int _fadeAlphaValue        = ((LDrawColor::alpha(colourCode) * (100 - Preferences::fadeStepsOpacity)) + (100 - 1)) / 100;
+  int _alphaValue            = fadePartType ? _fadeAlphaValue : LDrawColor::alpha(colourCode);             // use 100% opacity with highlight color
 
   return QString("0 !COLOUR %1 CODE %2 VALUE %3 EDGE %4 ALPHA %5")
                  .arg(_colourDescription)   // description
