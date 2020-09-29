@@ -2932,6 +2932,7 @@ Gui::Gui()
     Preferences::publishingPreferences();
     Preferences::exportPreferences();
 
+    saveDisplayPageNum = 0;
     displayPageNum = 1;
     numPrograms    = 0;
 
@@ -2939,6 +2940,7 @@ Gui::Gui()
     exportMode                      = EXPORT_PDF;
     pageRangeText                   = "1";
     exportPixelRatio                = 1.0;
+    mloadingFile                    = false;
     resetCache                      = false;
     m_previewDialog                 = false;
     m_partListCSIFile               = false;

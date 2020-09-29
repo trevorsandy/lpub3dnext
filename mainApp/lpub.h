@@ -508,6 +508,7 @@ public:
   int             saveStepPageNum;  // saved instance of the number displayed on the page
   int             saveContStepNum;  // saved continuous step number for steps before displayPage, subModel exit and stepGroup end
   int             saveGroupStepNum; // saved step group step number when pli per step is false
+  int             saveDisplayPageNum; // saved display page number when counting pages
   int             firstStepPageNum; // the first Step page number - used to specify frontCover page
   int             lastStepPageNum;  // the last Step page number - used to specify backCover page
   int             savePrevStepPosition; // indicate the previous step position amongst current and previous steps
@@ -533,7 +534,7 @@ public:
   QProgressBar    *m_progressDlgProgressBar;
 
   bool             m_partListCSIFile;   // processing part list CSI file
-
+  bool             mloadingFile;        // flag to indicate file being loaded.
   void            *noData;
 
   MetaItem        *mi;                  // utility functions for meta commands
@@ -1571,6 +1572,7 @@ private:
   bool getSceneObject(QGraphicsItem *selectedItem, Where &itemTop, int &stepNumber);
 
 private slots:
+    void pagesCounted();
     void open();
     void openWith();
     void save();

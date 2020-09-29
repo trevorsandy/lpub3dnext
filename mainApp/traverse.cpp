@@ -3970,33 +3970,56 @@ void Gui::drawPage(
       clearPage(KpageView,KpageScene);
       drawPage(view,scene,printing,updateViewer,true/*buildMod*/);
   } else {
-      topOfPages.append(current);
+void Gui::pagesCounted()
+{
+    topOfPages.append(current);
 /*
 #ifdef QT_DEBUG_MODE
-      emit messageSig(LOG_NOTICE, QString("DrawPage StepIndex"));
-      for (int i = 0; i < topOfPages.size(); i++)
-      {
+    emit messageSig(LOG_DEBUG, QString("Page Counted: %1 of %2 Current %3")
+                    .arg(displayPageNum) .arg(maxPages).arg(current.toString()));
+
+    emit messageSig(LOG_NOTICE, QString("DrawPage StepIndex"));
+    for (int i = 0; i < topOfPages.size(); i++)
+    {
           emit messageSig(LOG_NOTICE, QString("StepIndex: %1, SubmodelIndex: %2: LineNumber: %3, ModelName: %4")
                                              .arg(i)                                            // index
                                              .arg(getSubmodelIndex(topOfPages.at(i).modelName)) // modelIndex
                                              .arg(topOfPages.at(i).lineNumber)                  // lineNumber
                                              .arg(topOfPages.at(i).modelName));                 // modelName
-      }
+    }
 #endif
 */
+    maxPages--;
 
-      maxPages--;
+    if (Preferences::modeGUI && ! exporting()) {
+        QString string = QString("%1 of %2") .arg(displayPageNum) .arg(maxPages);
+        setPageLineEdit->setText(string);
 
-      setCurrentStep();
+        // count pages routine
+        if (saveDisplayPageNum) {
+            if (displayPageNum > maxPages)
+                displayPageNum = maxPages;
+            else
+                displayPageNum = saveDisplayPageNum;
 
-      if (Preferences::modeGUI && ! exporting()) {
-          QString string = QString("%1 of %2") .arg(displayPageNum) .arg(maxPages);
-          if (! exporting())
-              setPageLineEdit->setText(string);
-      }
+            saveDisplayPageNum = 0;
 
-      QApplication::restoreOverrideCursor();
-  }
+            emit messageSig(LOG_STATUS,QString());
+        } else {
+            if (mloadingFile) {
+                emit messageSig(LOG_INFO_STATUS, gui->loadAborted() ?
+                                    QString("LDraw model file %1 aborted.").arg(getCurFile()) :
+                                    QString("Model file loaded (%1 pages, %2 parts). %3")
+                                    .arg(maxPages)
+                                    .arg(ldrawFile.getPartCount())
+                                    .arg(elapsedTime(timer.elapsed())));
+                mloadingFile = false;
+            } else {
+                emit messageSig(LOG_STATUS,QString("Page loaded%1.")
+                                .arg(Preferences::modeGUI ? QString(". %1").arg(gui->elapsedTime(timer.elapsed())) : ""));
+            }
+        }
+    } // modeGUI and not exporting
 }
 
 void Gui::skipHeader(Where &current)

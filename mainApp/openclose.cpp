@@ -691,6 +691,7 @@ bool Gui::openFile(QString &fileName)
 {
   disableWatcher();
 
+  mloadingFile = true;
   parsedMessages.clear();
   clearPage(KpageView,KpageScene,true);
   closeFile();
