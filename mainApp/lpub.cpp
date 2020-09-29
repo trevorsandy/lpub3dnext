@@ -2920,6 +2920,10 @@ void Gui::preferences()
 
 Gui::Gui()
 {
+    qRegisterMetaType<LogType>("LogType");
+    qRegisterMetaType<Preferences::MsgKey>("MsgKey");
+    qRegisterMetaType<Preferences::MsgID>("MsgID");
+
     emit Application::instance()->splashMsgSig(QString("25% - %1 window defaults loading...").arg(VER_PRODUCTNAME_STR));
 
     Preferences::lgeoPreferences();
