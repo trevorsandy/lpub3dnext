@@ -545,6 +545,20 @@ public:
 
   FitMode          fitMode;             // how to fit the scene into the view
 
+  static bool     enableLineTypeIndexes; // flag for line indexes to translate lines between viewer and ldrawFiles
+  static QString  AttributeNames[];      // Pointer arrow attribute names
+  static QString  PositionNames[];       // Pointer arrow position names
+  static void     set_divider_pointers(  // Process step_group or callout divider pointers and pointer attributes
+          Meta &curMeta,
+          Where &current,
+          Range *range,
+          LGraphicsView *view,
+          DividerType dividerType,
+          int stepNum,
+          Rc rct);
+  Range *newRange(
+          Steps  *steps,
+          bool    calledOut);
   Where &topOfPage();
   Where &bottomOfPage();
 
@@ -986,6 +1000,38 @@ public:
   }
 
   bool extractStepKey(Where &here, int &stepNumber, const QString &key = "");
+
+  static void remove_group(
+      QStringList  in,     // csiParts
+      QVector<int> tin,    // typeIndexes
+      QString      group,  // steps->meta.LPub.remove.group.value()
+      QStringList  &out,   // newCSIParts
+      QVector<int> &tiout, // newTypeIndexes
+      Meta         &meta);
+
+  static void remove_parttype(
+      QStringList   in,     // csiParts
+      QVector<int>  tin,    // typeIndexes
+      QString       model,  // part type
+      QStringList  &out,    // newCSIParts
+      QVector<int> &tiout); // newTypeIndexes
+
+  static void remove_partname(
+      QStringList   in,     // csiParts
+      QVector<int>  tin,    // typeIndexes
+      QString       name,   // partName
+      QStringList  &out,    // newCSIParts
+      QVector<int> &tiout); // newCSIParts
+
+  QMap<int, PgSizeData> getPageSizes()
+  {
+      return pageSizes;
+  }
+
+  int includePub(Meta &meta, Where &includeHere, bool &inserted)
+  {
+      return include(meta, includeHere, inserted);
+  }
 
   /***********************************************************************
    * set Native renderer for fast processing

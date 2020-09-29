@@ -63,13 +63,13 @@
 #define FIRST_STEP 1
 #define FIRST_PAGE 1
 
-static QString AttributeNames[] =
+QString Gui::AttributeNames[] =
 {
     "Line",
     "Border"
 };
 
-static QString PositionNames[] =
+QString Gui::PositionNames[] =
 {
     "BASE_TOP",
     "BASE_BOTTOM",
@@ -91,9 +91,10 @@ static QString PositionNames[] =
  * ldraw file held in the the ldr string
  *
  ********************************************/
-static bool enableLineTypeIndexes;
 
-static void remove_group(
+bool Gui::enableLineTypeIndexes;
+
+void Gui::remove_group(
     QStringList  in,     // csiParts
     QVector<int> tin,    // typeIndexes
     QString      group,  // steps->meta.LPub.remove.group.value()
@@ -196,7 +197,7 @@ static void remove_group(
  *
  ********************************************/
 
-static void remove_parttype(
+void Gui::remove_parttype(
     QStringList   in,    // csiParts
     QVector<int>  tin,   // typeIndexes
     QString       model, // part type
@@ -240,7 +241,7 @@ static void remove_parttype(
  *
  ********************************************/
 
-static void remove_partname(
+void Gui::remove_partname(
     QStringList   in,    // csiParts
     QVector<int>  tin,   // typeIndexes
     QString       name,  // partName
@@ -299,14 +300,14 @@ static void remove_partname(
  *
  ********************************************/
 
-static void set_divider_pointers(
+void Gui::set_divider_pointers(
         Meta &curMeta,
         Where &current,
         Range *range,
         LGraphicsView *view,
         DividerType dividerType,
         int stepNum,
-        Rc rct){
+        Rc rct) {
 
     QString sType = (rct == CalloutDividerRc ? "CALLOUT" : "STEPGROUP");
 
@@ -407,7 +408,7 @@ static void set_divider_pointers(
  *
  */
 
-Range *newRange(
+Range *Gui::newRange(
     Steps  *steps,
     bool    calledOut)
 {
