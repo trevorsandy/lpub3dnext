@@ -445,32 +445,34 @@ class Preferences;
 class ProgressDialog;
 class Render;
 class Steps;
+class Range;
 class Where;
-enum traverseRc { HitEndOfPage = 1, HitBuildModAction };
-enum Dimensions {Pixels = 0, Inches };
-enum PAction { SET_DEFAULT_ACTION, SET_STOP_ACTION };
-enum Direction { PAGE_PREVIOUS, PAGE_NEXT, DIRECTION_NOT_SET };
+
+enum TraverseRc   { HitEndOfPage = 1, HitBuildModAction };
+enum Dimensions   { Pixels = 0, Inches };
+enum PAction      { SET_DEFAULT_ACTION, SET_STOP_ACTION };
+enum Direction    { PAGE_PREVIOUS, PAGE_NEXT, DIRECTION_NOT_SET };
 enum ExportOption { EXPORT_ALL_PAGES, EXPORT_PAGE_RANGE, EXPORT_CURRENT_PAGE };
-enum ExportMode { PRINT_FILE   = -2,//-2
-                  EXPORT_NONE  = -1,//-1
-                  PAGE_PROCESS =  0,// 0
-                  EXPORT_PDF,       // 1
-                  EXPORT_PNG,       // 2
-                  EXPORT_JPG,       // 3
-                  EXPORT_BMP,       // 4
-                  EXPORT_3DS_MAX,   // 5
-                  EXPORT_COLLADA,   // 6
-                  EXPORT_WAVEFRONT, // 7
-                  EXPORT_STL,       // 8
-                  EXPORT_POVRAY,    // 9
-                  EXPORT_BRICKLINK, // 10
-                  EXPORT_CSV,       // 11
-                  EXPORT_ELEMENT,   // 12
-                  EXPORT_HTML_PARTS,// 13
-                  EXPORT_HTML_STEPS,// 14
-                  POVRAY_RENDER,    // 15
-                  BLENDER_RENDER,   // 16
-                  BLENDER_IMPORT    // 17
+enum ExportMode   { PRINT_FILE   = -2,//-2
+                    EXPORT_NONE  = -1,//-1
+                    PAGE_PROCESS =  0,// 0
+                    EXPORT_PDF,       // 1
+                    EXPORT_PNG,       // 2
+                    EXPORT_JPG,       // 3
+                    EXPORT_BMP,       // 4
+                    EXPORT_3DS_MAX,   // 5
+                    EXPORT_COLLADA,   // 6
+                    EXPORT_WAVEFRONT, // 7
+                    EXPORT_STL,       // 8
+                    EXPORT_POVRAY,    // 9
+                    EXPORT_BRICKLINK, // 10
+                    EXPORT_CSV,       // 11
+                    EXPORT_ELEMENT,   // 12
+                    EXPORT_HTML_PARTS,// 13
+                    EXPORT_HTML_STEPS,// 14
+                    POVRAY_RENDER,    // 15
+                    BLENDER_RENDER,   // 16
+                    BLENDER_IMPORT    // 17
                   };
 
 const QString nativeExportNames[] =
