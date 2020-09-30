@@ -1622,6 +1622,7 @@ private slots:
 
     void toggleLCStatusBar(bool);
     void showLCStatusMessage();
+    void enableWindowFlags(bool);
 
     // Begin Jaco's code
 

@@ -5360,6 +5360,8 @@ void Gui::createDockWindows()
     addDockWidget(Qt::RightDockWidgetArea, fileEditDockWindow);
     viewMenu->addAction(fileEditDockWindow->toggleViewAction());
 
+    connect(fileEditDockWindow, SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
+
     create3DDockWindows();
 
     // launching with viewerDockWindow raised is not stable so start with fileEdit until I figure out what's wrong.

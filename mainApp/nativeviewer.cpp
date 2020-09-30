@@ -568,7 +568,12 @@ void Gui::create3DDockWindows()
         createPreviewWidget();
     }
 
-    connect(viewerDockWindow, SIGNAL (topLevelChanged(bool)), this, SLOT (toggleLCStatusBar(bool)));
+    connect(viewerDockWindow,                    SIGNAL (topLevelChanged(bool)), this, SLOT (toggleLCStatusBar(bool)));
+    connect(viewerDockWindow,                    SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
+    connect(gMainWindow->GetTimelineToolBar(),   SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
+    connect(gMainWindow->GetPropertiesToolBar(), SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
+    connect(gMainWindow->GetColorsToolBar(),     SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
+    connect(gMainWindow->GetPartsToolBar(),      SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
 }
 
 bool Gui::createPreviewWidget()
@@ -625,6 +630,19 @@ void Gui::togglePreviewWidget(bool b)
     }
     } else if (b) {
         createPreviewWidget();
+    }
+}
+
+void Gui::enableWindowFlags(bool detached)
+{
+    if (detached) {
+        QDockWidget *dockWidget = qobject_cast<QDockWidget *>(sender());
+        dockWidget->setWindowFlags(Qt::CustomizeWindowHint |
+                                          Qt::Window |
+                                          Qt::WindowMinimizeButtonHint |
+                                          Qt::WindowMaximizeButtonHint |
+                                          Qt::WindowCloseButtonHint);
+        dockWidget->show();
     }
 }
 
