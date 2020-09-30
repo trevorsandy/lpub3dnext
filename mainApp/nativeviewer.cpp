@@ -562,8 +562,11 @@ void Gui::create3DDockWindows()
 
     tabifyDockWidget(viewerDockWindow, gMainWindow->GetTimelineToolBar());
 
+    // Preview
     if (lcGetPreferences().mPreviewPosition == lcPreviewPosition::Docked)
+    {
         createPreviewWidget();
+    }
 
     connect(viewerDockWindow, SIGNAL (topLevelChanged(bool)), this, SLOT (toggleLCStatusBar(bool)));
 }
@@ -575,22 +578,13 @@ bool Gui::createPreviewWidget()
     ViewWidget = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
 
     if (Preview && ViewWidget) {
-        previewDockWindow = new QDockWidget(trUtf8("Preview"), this);
+        previewDockWindow = new QDockWidget(tr("3DPreview"), this);
+        previewDockWindow->setWindowTitle(trUtf8("3DPreview"));
         previewDockWindow->setObjectName("PreviewDockWindow");
         previewDockWindow->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-
+        previewDockWindow->setWidget(ViewWidget);
         addDockWidget(Qt::RightDockWidgetArea, previewDockWindow);
         viewMenu->addAction(previewDockWindow->toggleViewAction());
-
-        QWidget* PreviewWidget     = new QWidget(previewDockWindow);
-        QVBoxLayout* previewLayout = new QVBoxLayout(PreviewWidget);
-        previewLayout->setContentsMargins(0, 0, 0, 0);
-        previewLayout->addWidget(ViewWidget);
-        ViewWidget->preferredSize  = PreviewWidget->size();
-        float Scale                = ViewWidget->deviceScale();
-        Preview->mWidth            = ViewWidget->width()  * Scale;
-        Preview->mHeight           = ViewWidget->height() * Scale;
-        Preview->ZoomExtents();
 
         tabifyDockWidget(viewerDockWindow, previewDockWindow);
 
@@ -622,7 +616,7 @@ void Gui::togglePreviewWidget(bool b)
     if (Preview) {
     QList<QAction*> viewActions = viewMenu->actions();
     foreach (QAction *viewAct, viewActions) {
-        if (viewAct->text() == "Preview") {
+        if (viewAct->text() == "3DPreview") {
             viewAct->setVisible(b);
              messageSig(LOG_DEBUG, QString("%1 window %2.")
                         .arg(viewAct->text()).arg(b ? "Displayed" : "Hidden"));
