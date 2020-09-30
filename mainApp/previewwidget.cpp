@@ -462,7 +462,7 @@ void PreviewWidget::OnDraw()
         if (Preferences.mDrawPreviewAxis && !mIsSubPreview)
             DrawAxes();
 
-        if (!mIsSubPreview)
+        if (Preferences.mDrawPreviewViewSphere && !mIsSubPreview)
             mViewSphere.Draw();
         DrawViewport();
     }

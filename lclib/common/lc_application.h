@@ -117,6 +117,7 @@ public:
 	lcPreviewPosition mPreviewPosition;
 	int mPreviewSize;
 	int mDrawPreviewAxis;
+	int mDrawPreviewViewSphere;
 /*** LPub3D Mod end ***/
 /*** LPub3D Mod - Selected Parts ***/
 	bool mBuildMofificationEnabled;

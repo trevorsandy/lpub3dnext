@@ -183,6 +183,7 @@ static lcProfileEntry gProfileEntries[LC_NUM_PROFILE_KEYS] =
 	lcProfileEntry("Settings", "PreviewLocation", (int)lcPreviewLocation::BottomRight),        // LC_PROFILE_PREVIEW_LOCATION                          /*** LPub3D Mod - preview widget ***/
 	lcProfileEntry("Settings", "PreviewPosition", (int)lcPreviewPosition::Docked),             // LC_PROFILE_PREVIEW_POSITION                          /*** LPub3D Mod - preview widget ***/
 	lcProfileEntry("Settings", "DrawPreviewAxis", 0),                                          // LC_PROFILE_PREVIEW_DRAW_AXES                         /*** LPub3D Mod - preview widget ***/
+	lcProfileEntry("Settings", "DrawPreviewViewSphere",1)                                      // LC_PROFILE_PREVIEW_DRAW_VIEW_SPHERE                  /*** LPub3D Mod - preview widget ***/
 /*** LPub3D Mod end ***/
 };
 
