@@ -59,10 +59,7 @@ public:
     };
 
     PreviewWidget();
-    PreviewWidget(lcModel* Model,
-                 const QString &PartType,
-                 int ColorCode,
-                 bool subPreview = false);
+    PreviewWidget(bool subPreview);
     ~PreviewWidget();
 
     lcTool GetTool() const

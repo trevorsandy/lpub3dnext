@@ -721,80 +721,30 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 		return;
 	}
 
-	lcGetPiecesLibrary()->LoadPieceInfo(Info, false, false);
-	if (Info->mState != LC_PIECEINFO_LOADED)
-		emit lpubAlert->messageSig(LOG_ERROR, QString("Unable to load piece: %1")
-								   .arg(Info->mFileName));
+	QString TypeLabel    = IsSubfile ? "Submodel" : "Part";
+	QString WindowTitle  = QString("%1 Preview").arg(TypeLabel);
 
-	QString typeLabel    = IsSubfile ? "Submodel" : "Part";
-	QString windowTitle  = QString("%1 Preview").arg(typeLabel);
+	PreviewWidget *Preview = new PreviewWidget();
 
-	auto showErrorMessage = [&PartType, &windowTitle, &typeLabel] (const QString message) {
-		QPixmap _icon = QPixmap(":/icons/lpub96.png");
-		if (_icon.isNull())
-			_icon = QPixmap (":/icons/update.png");
-
-		QMessageBox box;
-		box.setWindowIcon(QIcon());
-		box.setIconPixmap (_icon);
-		box.setTextFormat (Qt::RichText);
-		box.setWindowTitle(windowTitle);
-		box.setWindowFlags (Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint);
-		QString title = "<b>" + QString ("%1 preview encountered and eror.").arg(typeLabel) + "</b>";
-		QString text  = QString ("%1 '%2' failed to load in the preview window").arg(typeLabel).arg(PartType);
-		box.setText (title);
-		box.setInformativeText (message.isEmpty() ? text : message);
-		box.setStandardButtons (QMessageBox::Ok);
-
-		box.exec();
-	};
-
-	PreviewWidget *Preview        = nullptr;
-
-	Project       *PreviewProject = nullptr;
-	lcModel       *ActiveModel    = nullptr;
-	lcQGLWidget   *ViewWidget     = nullptr;
-
-	PreviewProject = new Project(true/*isPreview*/);
-
-	PreviewProject->SetActiveModel(0);
-
-	lcGetPiecesLibrary()->RemoveTemporaryPieces();
-
-	ActiveModel = PreviewProject->GetActiveModel();
-
-	float* Matrix =  lcMatrix44Identity();;
-	lcMatrix44 Transform(lcVector4( Matrix[0],  Matrix[2], -Matrix[1], 0.0f), lcVector4(Matrix[8],  Matrix[10], -Matrix[9],  0.0f),
-						 lcVector4(-Matrix[4], -Matrix[6],  Matrix[5], 0.0f), lcVector4(Matrix[12], Matrix[14], -Matrix[13], 1.0f));
-
-	int CurrentStep = 1;
-	lcPiece* Piece = new lcPiece(nullptr);
-
-	Piece->SetPieceInfo(Info, PartType, false);
-	Piece->Initialize(Transform, CurrentStep);
-	Piece->SetColorCode(ColorCode);
-
-	ActiveModel->AddPiece(Piece);
-
-	emit lpubAlert->messageSig(LOG_DEBUG,
-							   QString("Preview PartType: %1, Name: %2, ColorCode: %3, ColorIndex: %4")
-							   .arg(Piece->GetID()).arg(Piece->GetName()).arg(ColorCode).arg( Piece->mColorIndex));
-
-	PartType.clear(); // Trigger not to use setCurrentPart in PreviewWidget
-	Piece = nullptr;
-
-	Preview  = new PreviewWidget(ActiveModel, PartType, ColorCode);
-
-	ViewWidget  = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
+	lcQGLWidget   *ViewWidget = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
 
 	if (Preview && ViewWidget) {
-		ViewWidget->setWindowTitle(windowTitle);
+		if (IsSubfile) {
+			if (!Preview->LoadCurrentModel(PartType, ColorCode))
+				emit lpubAlert->messageSig(LOG_ERROR, QString("Submodel preview for %2 failed.").arg(PartType));
+		} else {
+			if (!Preview->SetCurrentPiece(PartType, ColorCode))
+				emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %2 failed.").arg(PartType));
+		}
+
+		ViewWidget->setWindowTitle(WindowTitle);
 		int SizeX = 300;
 		int SizeY = 200;
 		if (lcGetPreferences().mPreviewSize == 400) {
 			SizeX = 400;
 			SizeY = 300;
 		}
+
 		ViewWidget->preferredSize = QSize(SizeX, SizeY);
 		float Scale               = ViewWidget->deviceScale();
 		Preview->mWidth           = ViewWidget->width()  * Scale;
@@ -835,7 +785,8 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 		Preview->ZoomExtents();
 
 	} else {
-		showErrorMessage(QString());
+		emit lpubAlert->messageSig(LOG_ERROR, QString("Preview %1 failed.")
+								   .arg(Info->mFileName));
 	}
 }
 /*** LPub3D Mod end ***/
