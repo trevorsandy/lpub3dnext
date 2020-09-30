@@ -161,9 +161,14 @@ void EditWindow::previewLine()
     QStringList partKeys = previewLineAct->data().toString().split("|");
     int colorCode        = partKeys.at(0).toInt();
     QString partType     = partKeys.at(1);
+
+    if (lcGetPreferences().mPreviewPosition != lcPreviewPosition::Floating) {
+        emit previewPieceSig(partType, colorCode);
+        return;
+    }
+
     bool isSubfile       = partKeys.at(2).toInt();
     bool isSubstitute    = partKeys.at(3).toInt();
-
     Q_UNUSED(isSubstitute)
 
     QString typeLabel    = isSubfile ? "Submodel" : "Part";
@@ -224,14 +229,35 @@ void EditWindow::previewLine()
 
     if (Preview && ViewWidget) {
         ViewWidget->setWindowTitle(windowTitle);
-        ViewWidget->preferredSize = QSize(300, 200);
+        int SizeX = 300;
+        int SizeY = 200;
+        if (lcGetPreferences().mPreviewSize == 400) {
+            SizeX = 400;
+            SizeY = 300;
+        }
+        ViewWidget->preferredSize = QSize(SizeX, SizeY);
         float Scale               = ViewWidget->deviceScale();
         Preview->mWidth           = ViewWidget->width()  * Scale;
         Preview->mHeight          = ViewWidget->height() * Scale;
 
         const QRect desktop = QApplication::desktop()->geometry();
 
-        QPoint pos = mapToGlobal(rect().bottomLeft());
+        QPoint pos;
+        switch (lcGetPreferences().mPreviewLocation)
+        {
+        case lcPreviewLocation::TopRight:
+            pos = mapToGlobal(rect().topRight());
+            break;
+        case lcPreviewLocation::TopLeft:
+            pos = mapToGlobal(rect().topLeft());
+            break;
+        case lcPreviewLocation::BottomRight:
+            pos = mapToGlobal(rect().bottomRight());
+            break;
+        default:
+            pos = mapToGlobal(rect().bottomLeft());
+            break;
+        }
         if (pos.x() < desktop.left())
             pos.setX(desktop.left());
         if (pos.y() < desktop.top())
@@ -245,6 +271,7 @@ void EditWindow::previewLine()
 
         ViewWidget->show();
         ViewWidget->setFocus();
+
         Preview->ZoomExtents();
 
     } else {

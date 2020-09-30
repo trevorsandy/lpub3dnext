@@ -595,7 +595,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget_2">
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tab_3">
           <attribute name="title">
@@ -1108,11 +1108,6 @@
                 <item>
                  <property name="text">
                   <string>Floating</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Viewport</string>
                  </property>
                 </item>
                </widget>
@@ -2125,17 +2120,6 @@
   <tabstop>mouseShift</tabstop>
   <tabstop>mouseAssign</tabstop>
   <tabstop>mouseRemove</tabstop>
-  <tabstop>PreviewViewSphereLocationCombo_2</tabstop>
-  <tabstop>PreviewPositionCombo_2</tabstop>
-  <tabstop>ViewSphereTextColorButton_2</tabstop>
-  <tabstop>PreviewLocationCombo_2</tabstop>
-  <tabstop>PreviewAxisIconCheckBox_2</tabstop>
-  <tabstop>PreviewSizeCombo_2</tabstop>
-  <tabstop>PreviewViewSphereSizeCombo_2</tabstop>
-  <tabstop>ViewSphereLocationCombo_2</tabstop>
-  <tabstop>ViewSphereHighlightColorButton_2</tabstop>
-  <tabstop>ViewSphereSizeCombo_2</tabstop>
-  <tabstop>ViewSphereColorButton_2</tabstop>
  </tabstops>
  <resources>
   <include location="../lclib.qrc"/>

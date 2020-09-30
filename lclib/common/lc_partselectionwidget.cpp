@@ -711,15 +711,20 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 	if (!Info)
 		return;
 
+	bool IsSubfile    = Info->IsModel();
+	QString PartType  = Info->mFileName;
+	quint32 ColorCode = IsSubfile ? LDRAW_MATERIAL_COLOUR :
+									lcGetColorCode(mListModel->GetColorIndex());
+
+	if (lcGetPreferences().mPreviewPosition != lcPreviewPosition::Floating) {
+		emit gMainWindow->previewPieceSig(PartType, ColorCode);
+		return;
+	}
+
 	lcGetPiecesLibrary()->LoadPieceInfo(Info, false, false);
 	if (Info->mState != LC_PIECEINFO_LOADED)
 		emit lpubAlert->messageSig(LOG_ERROR, QString("Unable to load piece: %1")
 								   .arg(Info->mFileName));
-
-	bool IsSubfile    = Info->IsModel();
-	QString PartType  = QString(Info->mFileName);
-	quint32 ColorCode = IsSubfile ? LDRAW_MATERIAL_COLOUR :
-									lcGetColorCode(mListModel->GetColorIndex());
 
 	QString typeLabel    = IsSubfile ? "Submodel" : "Part";
 	QString windowTitle  = QString("%1 Preview").arg(typeLabel);
@@ -784,14 +789,35 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 
 	if (Preview && ViewWidget) {
 		ViewWidget->setWindowTitle(windowTitle);
-		ViewWidget->preferredSize = QSize(300, 200);
+		int SizeX = 300;
+		int SizeY = 200;
+		if (lcGetPreferences().mPreviewSize == 400) {
+			SizeX = 400;
+			SizeY = 300;
+		}
+		ViewWidget->preferredSize = QSize(SizeX, SizeY);
 		float Scale               = ViewWidget->deviceScale();
 		Preview->mWidth           = ViewWidget->width()  * Scale;
 		Preview->mHeight          = ViewWidget->height() * Scale;
 
 		const QRect desktop = QApplication::desktop()->geometry();
 
-		QPoint pos = mapToGlobal(rect().bottomLeft());
+		QPoint pos;
+		switch (lcGetPreferences().mPreviewLocation)
+		{
+		case lcPreviewLocation::TopRight:
+			pos = mapToGlobal(rect().topRight());
+			break;
+		case lcPreviewLocation::TopLeft:
+			pos = mapToGlobal(rect().topLeft());
+			break;
+		case lcPreviewLocation::BottomRight:
+			pos = mapToGlobal(rect().bottomRight());
+			break;
+		default:
+			pos = mapToGlobal(rect().bottomLeft());
+			break;
+		}
 		if (pos.x() < desktop.left())
 			pos.setX(desktop.left());
 		if (pos.y() < desktop.top())
@@ -805,6 +831,7 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 
 		ViewWidget->show();
 		ViewWidget->setFocus();
+
 		Preview->ZoomExtents();
 
 	} else {

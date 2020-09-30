@@ -35,7 +35,9 @@
 #include "texfont.h"
 #include "lc_library.h"
 
+#include "ldrawfiles.h"
 #include "lpubalert.h"
+#include "paths.h"
 
 PreviewWidget* gPreviewWidget;
 
@@ -56,6 +58,25 @@ PreviewWidget::PreviewWidget(lcModel* Model, const QString &PartType, int ColorC
         SetCurrentPiece(PartType, ColorCode);
 }
 
+PreviewWidget::PreviewWidget()
+: mLoader(new Project(true/*isPreview*/)),
+  mViewSphere(this/*isPreview*/, false/*subPreview*/),
+  mIsPart(false),
+  mIsSubPreview(false)
+{
+    mTool        = LC_TOOL_SELECT;
+    mTrackTool   = LC_TRACKTOOL_NONE;
+    mTrackButton = lcTrackButton::None;
+
+    mLoader->SetActiveModel(0);
+    lcGetPiecesLibrary()->RemoveTemporaryPieces();
+    mModel = mLoader->GetActiveModel();
+    mActiveSubmodelInstance = nullptr;
+    mCamera = nullptr;
+
+    SetDefaultCamera();
+}
+
 PreviewWidget::~PreviewWidget()
 {
     if (mCamera && mCamera->IsSimple())
@@ -71,8 +92,99 @@ PreviewWidget::~PreviewWidget()
     }
 }
 
-void PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
+bool PreviewWidget::LoadCurrentModel(const QString& ModelName, int ColorCode)
 {
+    LDrawFile ldrawFile;
+    bool IsUnofficialPart = ldrawFile.isUnofficialPart(ModelName) == UNOFFICIAL_PART ||
+            ldrawFile.isUnofficialPart(ModelName) == UNOFFICIAL_SUBPART;
+    int UnoffPartColorCode = IsUnofficialPart ? ColorCode : LDRAW_MATERIAL_COLOUR;
+
+    QString ModelPath = QString("%1/%2/%3").arg(QDir::currentPath()).arg(Paths::tmpDir).arg(ModelName);
+    QFile File(ModelPath);
+
+    if (!File.open(QIODevice::ReadOnly))
+    {
+        emit lpubAlert->messageSig(LOG_ERROR, QString("Error opening model file '%1':<br>%2")
+                                   .arg(ModelPath, File.errorString()));
+        return false;
+    }
+
+    lcArray<lcModel*> mModels;
+
+    QFileInfo FileInfo(ModelPath);
+    QString Extension = FileInfo.suffix().toLower();
+    QByteArray FileData = File.readAll();
+
+    bool LoadDAT;
+    if (Extension == QLatin1String("dat") || Extension == QLatin1String("ldr") || Extension == QLatin1String("mpd"))
+        LoadDAT = true;
+    else
+        LoadDAT = FileData.size() > 7 && memcmp(FileData, "LeoCAD ", 7);
+    if (LoadDAT)
+    {
+        QBuffer Buffer(&FileData);
+        Buffer.open(QIODevice::ReadOnly);
+        std::vector<std::pair<int, lcModel*>> Models;
+
+        while (!Buffer.atEnd())
+        {
+            lcModel* Model = new lcModel(QString(), true/*IsPreview*/);
+            if (IsUnofficialPart)
+                mModel->SetUnoffPartColorCode(UnoffPartColorCode);
+
+            int Pos = Model->SplitMPD(Buffer);
+
+            if (Models.empty() || !Model->GetFileName().isEmpty())
+            {
+                mModels.Add(Model);
+                Models.emplace_back(std::make_pair(Pos, Model));
+                Model->CreatePieceInfo(mLoader);
+            }
+            else
+                delete Model;
+        }
+
+        for (size_t ModelIdx = 0; ModelIdx < Models.size(); ModelIdx++)
+        {
+            Buffer.seek(Models[ModelIdx].first);
+            lcModel* Model = Models[ModelIdx].second;
+            Model->LoadLDraw(Buffer, mLoader);
+            Model->SetSaved();
+        }
+    }
+
+    if (mModels.IsEmpty())
+    {
+        emit lpubAlert->messageSig(LOG_ERROR, QString("Error loading file '%1':\nFile format is not recognized.").arg(ModelPath));
+        return false;
+    }
+
+    if (mModels.GetSize() == 1)
+    {
+        lcModel* Model = mModels[0];
+
+        if (Model->GetProperties().mFileName.isEmpty())
+        {
+            Model->SetFileName(FileInfo.fileName());
+            lcGetPiecesLibrary()->RenamePiece(Model->GetPieceInfo(), FileInfo.fileName().toLatin1());
+        }
+    }
+
+    std::vector<lcModel*> UpdatedModels;
+    UpdatedModels.reserve(mModels.GetSize());
+
+    for (lcModel* Model : mModels)
+    {
+        Model->UpdateMesh();
+        Model->UpdatePieceInfo(UpdatedModels);
+    }
+
+    return true;
+}
+
+bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
+{
+    mIsPart = true;
     lcPiecesLibrary* Library = lcGetPiecesLibrary();
     lcModel* ActiveModel = GetActiveModel();
 
@@ -102,7 +214,9 @@ void PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
                                    QString("Preview PartType: %1, Name: %2, ColorCode: %3, ColorIndex: %4")
                                    .arg(Piece->GetID()).arg(Piece->GetName()).arg(ColorCode).arg( Piece->mColorIndex));
         Piece = nullptr;
+        return true;
     }
+    return false;
 }
 
 void PreviewWidget::SetDefaultCamera()
@@ -419,7 +533,7 @@ void PreviewWidget::OnDraw()
     {
         mContext->SetLineWidth(1.0f);
 
-        if (Preferences.mDrawAxes && !mIsSubPreview)
+        if (Preferences.mDrawPreviewAxis && !mIsSubPreview)
             DrawAxes();
 
         mViewSphere.Draw();

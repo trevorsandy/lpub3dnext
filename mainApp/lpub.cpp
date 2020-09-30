@@ -2928,6 +2928,9 @@ Gui::Gui()
     Preferences::publishingPreferences();
     Preferences::exportPreferences();
 
+    ViewWidget     = nullptr;
+    Preview        = nullptr;
+
     displayPageNum = 1;
     numPrograms    = 0;
 
@@ -3016,11 +3019,18 @@ Gui::Gui()
     connect(this,           SIGNAL(setContinuousPageSig(bool)),
             this,           SLOT(  setContinuousPage(   bool)));
 
+    connect(this,           SIGNAL(previewPieceSig(const QString &,int)),
+            this,           SLOT(previewPiece(const QString &,int)));
+
+
     // Gui - ParmsWindow
     connect(this,           SIGNAL(displayParmsFileSig(const QString &)),
             parmsWindow,    SLOT( displayParmsFile   (const QString &)));
 
     // Gui - EditWindow
+    connect(editWindow,           SIGNAL(previewPieceSig(const QString &,int)),
+            this,                 SLOT(previewPiece(const QString &,int)));
+
     connect(this,           SIGNAL(displayFileSig(LDrawFile *, const QString &)),
             editWindow,     SLOT(  displayFile   (LDrawFile *, const QString &)));
 

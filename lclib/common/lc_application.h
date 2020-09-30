@@ -108,15 +108,15 @@ public:
 	quint32 mBackgroundSolidColor;
 /*** LPub3D Mod end ***/
 /*** LPub3D Mod - preview widget ***/
-    int mPreviewEnabled;
+	int mPreviewEnabled;
 	quint32 mPreviewActiveColor;
-    int mPreviewViewSphereEnabled;
+	int mPreviewViewSphereEnabled;
 	int mPreviewViewSphereSize;
 	lcViewSphereLocation mPreviewViewSphereLocation;
-    lcPreviewLocation mPreviewLocation;
-    lcPreviewPosition mPreviewPosition;
-    int mPreviewSize;
-    int mDrawPreviewAxis;
+	lcPreviewLocation mPreviewLocation;
+	lcPreviewPosition mPreviewPosition;
+	int mPreviewSize;
+	int mDrawPreviewAxis;
 /*** LPub3D Mod end ***/
 /*** LPub3D Mod - Selected Parts ***/
 	bool mBuildMofificationEnabled;

@@ -35,6 +35,7 @@
 #include "lc_viewsphere.h"
 #include "lc_commands.h"
 
+class Project;
 class lcModel;
 class lcPiece;
 
@@ -57,6 +58,7 @@ public:
         LC_TRACKTOOL_COUNT
     };
 
+    PreviewWidget();
     PreviewWidget(lcModel* Model,
                  const QString &PartType,
                  int ColorCode,
@@ -85,7 +87,8 @@ public:
         lcUnprojectPoints(Points, NumPoints, mCamera->mWorldView, GetProjectionMatrix(), Viewport);
     }
 
-    void SetCurrentPiece(const QString& PartType, int ColorCode);
+    bool LoadCurrentModel(const QString& ModelName, int ColorCode);
+    bool SetCurrentPiece(const QString& PartType, int ColorCode);
     lcMatrix44 GetProjectionMatrix() const;
     lcModel* GetActiveModel() const;
     lcCursor GetCursor() const;
@@ -123,6 +126,7 @@ protected:
     void StopTracking(bool Accept);
     void OnButtonDown(lcTrackButton TrackButton);
 
+    Project* mLoader;
     lcModel* mModel;
     lcCamera* mCamera;
     lcViewSphere mViewSphere;

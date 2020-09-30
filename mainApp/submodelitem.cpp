@@ -1204,8 +1204,13 @@ void SMGraphicsPixmapItem::previewSubModel()
 {
     int colorCode        = part->color.toInt();
     QString partType     = part->type;
-    bool isSubfile       = gui->isSubmodel(part->type);
 
+    if (lcGetPreferences().mPreviewPosition != lcPreviewPosition::Floating) {
+        emit gui->previewPieceSig(partType, colorCode);
+        return;
+    }
+
+    bool isSubfile       = gui->isSubmodel(part->type);
     QString typeLabel    = isSubfile ? "Submodel" : "Part";
     QString windowTitle  = QString("%1 Preview").arg(typeLabel);
 
@@ -1264,7 +1269,13 @@ void SMGraphicsPixmapItem::previewSubModel()
 
     if (Preview && ViewWidget) {
         ViewWidget->setWindowTitle(windowTitle);
-        ViewWidget->preferredSize = QSize(300, 200);
+        int SizeX = 300;
+        int SizeY = 200;
+        if (lcGetPreferences().mPreviewSize == 400) {
+            SizeX = 400;
+            SizeY = 300;
+        }
+        ViewWidget->preferredSize = QSize(SizeX, SizeY);
         float Scale               = ViewWidget->deviceScale();
         Preview->mWidth           = ViewWidget->width()  * Scale;
         Preview->mHeight          = ViewWidget->height() * Scale;
@@ -1272,7 +1283,22 @@ void SMGraphicsPixmapItem::previewSubModel()
         const QRect desktop = QApplication::desktop()->geometry();
 
         QGraphicsView *view = subModel->background->scene()->views().first();
-        QPointF sceneP = subModel->background->mapToScene(subModel->background->boundingRect().bottomLeft());
+        QPointF sceneP;
+        switch (lcGetPreferences().mPreviewLocation)
+        {
+        case lcPreviewLocation::TopRight:
+            sceneP = subModel->background->mapToScene(subModel->background->boundingRect().topRight());
+            break;
+        case lcPreviewLocation::TopLeft:
+            sceneP = subModel->background->mapToScene(subModel->background->boundingRect().topLeft());
+            break;
+        case lcPreviewLocation::BottomRight:
+            sceneP = subModel->background->mapToScene(subModel->background->boundingRect().bottomRight());
+            break;
+        default:
+            sceneP = subModel->background->mapToScene(subModel->background->boundingRect().bottomLeft());
+            break;
+        }
         QPoint viewP = view->mapFromScene(sceneP);
         QPoint pos = view->viewport()->mapToGlobal(viewP);
         if (pos.x() < desktop.left())
@@ -1288,6 +1314,7 @@ void SMGraphicsPixmapItem::previewSubModel()
 
         ViewWidget->show();
         ViewWidget->setFocus();
+
         Preview->ZoomExtents();
 
     } else {
