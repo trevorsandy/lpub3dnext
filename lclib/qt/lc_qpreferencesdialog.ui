@@ -1102,7 +1102,7 @@
                <widget class="QComboBox" name="PreviewPositionCombo">
                 <item>
                  <property name="text">
-                  <string>Docked</string>
+                  <string>Dockable</string>
                  </property>
                 </item>
                 <item>

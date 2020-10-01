@@ -715,6 +715,9 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 		return;
 	}
 
+	if (!lcGetPreferences().mPreviewEnabled)
+		return;
+
 	QString TypeLabel    = IsSubfile ? "Submodel" : "Part";
 	QString WindowTitle  = QString("%1 Preview").arg(TypeLabel);
 
@@ -723,23 +726,15 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 	lcQGLWidget   *ViewWidget = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
 
 	if (Preview && ViewWidget) {
-		if (IsSubfile) {
-			if (!Preview->LoadCurrentModel(PartType, ColorCode))
-				emit lpubAlert->messageSig(LOG_ERROR, QString("Submodel preview for %2 failed.").arg(PartType));
-		} else {
-			if (!Preview->SetCurrentPiece(PartType, ColorCode))
-				emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %2 failed.").arg(PartType));
-		}
+		if (!Preview->SetCurrentPiece(PartType, ColorCode))
+			emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %1 failed.").arg(PartType));
 
 		ViewWidget->setWindowTitle(WindowTitle);
-		int SizeX = 300;
-		int SizeY = 200;
+		int Size[2] = { 300,200 };
 		if (lcGetPreferences().mPreviewSize == 400) {
-			SizeX = 400;
-			SizeY = 300;
+			Size[0] = 400; Size[1] = 300;
 		}
-
-		ViewWidget->preferredSize = QSize(SizeX, SizeY);
+		ViewWidget->preferredSize = QSize(Size[0], Size[1]);
 		float Scale               = ViewWidget->deviceScale();
 		Preview->mWidth           = ViewWidget->width()  * Scale;
 		Preview->mHeight          = ViewWidget->height() * Scale;
@@ -773,11 +768,9 @@ void lcPartSelectionListView::PreviewSelection(int InfoIndex)
 			pos.setY(desktop.bottom() - ViewWidget->height());
 		ViewWidget->move(pos);
 
+		ViewWidget->setMinimumSize(100,100);
 		ViewWidget->show();
 		ViewWidget->setFocus();
-
-		Preview->ZoomExtents();
-
 	} else {
 		emit lpubAlert->messageSig(LOG_ERROR, QString("Preview %1 failed.")
 								   .arg(Info->mFileName));

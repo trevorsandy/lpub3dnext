@@ -43,24 +43,9 @@ PreviewWidget* gPreviewWidget;
 
 PreviewWidget::PreviewWidget(bool subPreview)
 : mLoader(new Project(true/*isPreview*/)),
-  mViewSphere(this, subPreview),
+  mViewSphere(this/*Preview*/, subPreview),
+  mIsPart(false),
   mIsSubPreview(subPreview)
-{
-    mTool        = LC_TOOL_SELECT;
-    mTrackTool   = LC_TRACKTOOL_NONE;
-    mTrackButton = lcTrackButton::None;
-
-    mLoader->SetActiveModel(0);
-    mModel = mLoader->GetActiveModel();
-    mCamera = nullptr;
-
-    SetDefaultCamera();
-}
-
-PreviewWidget::PreviewWidget()
-: mLoader(new Project(true/*isPreview*/)),
-  mViewSphere(this/*isPreview*/, false/*subPreview*/),
-  mIsPart(false), mIsSubPreview(false)
 {
     mTool        = LC_TOOL_SELECT;
     mTrackTool   = LC_TRACKTOOL_NONE;
@@ -86,27 +71,6 @@ PreviewWidget::~PreviewWidget()
             Library->ReleasePieceInfo(Info);
         }
     }
-}
-
-bool PreviewWidget::LoadCurrentModel(const QString& ModelName, int ColorCode)
-{
-    QString ModelPath = QString("%1/%2/%3")
-            .arg(QDir::currentPath())
-            .arg(Paths::tmpDir)
-            .arg(ModelName);
-
-    if (!mLoader->Load(ModelPath)) {
-        emit lpubAlert->messageSig(LOG_DEBUG,QString("Failed to load '%1'.").arg(ModelPath));
-        return false;
-    }
-
-    mLoader->SetActiveModel(0);
-    lcGetPiecesLibrary()->RemoveTemporaryPieces();
-    mModel = mLoader->GetActiveModel();
-    if (ColorCode != LDRAW_MATERIAL_COLOUR)
-        mModel->SetUnoffPartColorCode(ColorCode);
-
-    return true;
 }
 
 bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
@@ -139,6 +103,7 @@ bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
         emit lpubAlert->messageSig(LOG_DEBUG,
                                    QString("Preview PartType: %1, Name: %2, ColorCode: %3, ColorIndex: %4")
                                    .arg(Piece->GetID()).arg(Piece->GetName()).arg(ColorCode).arg( Piece->mColorIndex));
+        ZoomExtents();
         Piece = nullptr;
     } else {
         QString ModelPath = QString("%1/%2/%3")
@@ -156,9 +121,19 @@ bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
         mModel = mLoader->GetActiveModel();
         if (ColorCode != LDRAW_MATERIAL_COLOUR)
             mModel->SetUnoffPartColorCode(ColorCode);
+        ZoomExtents();
     }
 
     return true;
+}
+
+void PreviewWidget::ClearPreview()
+{
+    mLoader = new Project(true/*isPreview*/);
+    mLoader->SetActiveModel(0);
+    mModel = mLoader->GetActiveModel();
+    lcGetPiecesLibrary()->UnloadUnusedParts();
+    Redraw();
 }
 
 void PreviewWidget::SetDefaultCamera()

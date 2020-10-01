@@ -3561,6 +3561,9 @@ void PGraphicsPixmapItem::previewPart() {
         return;
     }
 
+    if (!lcGetPreferences().mPreviewEnabled)
+        return;
+
     bool isSubfile       = gui->isSubmodel(part->type);
     QString typeLabel    = isSubfile ? "Submodel" : "Part";
     QString windowTitle  = QString("%1 Preview").arg(typeLabel);
@@ -3570,25 +3573,18 @@ void PGraphicsPixmapItem::previewPart() {
     lcQGLWidget   *ViewWidget = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
 
     if (Preview && ViewWidget) {
-        if (isSubfile) {
-            if (!Preview->LoadCurrentModel(partType, colorCode))
-                emit gui->messageSig(LOG_ERROR, QString("Submodel preview for %2 failed.").arg(partType));
-        } else {
-            if (!Preview->SetCurrentPiece(partType, colorCode))
-                emit gui->messageSig(LOG_ERROR, QString("Part preview for %2 failed.").arg(partType));
-        }
+        if (!Preview->SetCurrentPiece(partType, colorCode))
+            emit gui->messageSig(LOG_ERROR, QString("Part preview for %1 failed.").arg(partType));
 
         QString typeLabel    = isSubfile ? "Submodel" : "Part";
         QString windowTitle  = QString("%1 Preview").arg(typeLabel);
 
         ViewWidget->setWindowTitle(windowTitle);
-        int SizeX = 300;
-        int SizeY = 200;
+        int Size[2] = { 300,200 };
         if (lcGetPreferences().mPreviewSize == 400) {
-            SizeX = 400;
-            SizeY = 300;
+            Size[0] = 400; Size[1] = 300;
         }
-        ViewWidget->preferredSize = QSize(SizeX, SizeY);
+        ViewWidget->preferredSize = QSize(Size[0], Size[1]);
         float Scale               = ViewWidget->deviceScale();
         Preview->mWidth           = ViewWidget->width()  * Scale;
         Preview->mHeight          = ViewWidget->height() * Scale;
@@ -3625,14 +3621,11 @@ void PGraphicsPixmapItem::previewPart() {
             pos.setY(desktop.bottom() - ViewWidget->height());
         ViewWidget->move(pos);
 
+        ViewWidget->setMinimumSize(100,100);
         ViewWidget->show();
         ViewWidget->setFocus();
-
-        Preview->ZoomExtents();
-
     } else {
-        emit gui->messageSig(LOG_ERROR, QString("Preview %1 failed.")
-                                   .arg(partType));
+        emit gui->messageSig(LOG_ERROR, QString("Preview %1 failed.").arg(partType));
     }
 }
 

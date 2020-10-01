@@ -59,8 +59,7 @@ public:
         LC_TRACKTOOL_COUNT
     };
 
-    PreviewWidget();
-    PreviewWidget(bool subPreview);
+    PreviewWidget(bool subPreview = false);
     ~PreviewWidget();
 
     lcTool GetTool() const
@@ -85,7 +84,7 @@ public:
         lcUnprojectPoints(Points, NumPoints, mCamera->mWorldView, GetProjectionMatrix(), Viewport);
     }
 
-    bool LoadCurrentModel(const QString& ModelName, int ColorCode);
+    void ClearPreview();
     bool SetCurrentPiece(const QString& PartType, int ColorCode);
     lcMatrix44 GetProjectionMatrix() const;
     lcModel* GetActiveModel() const;

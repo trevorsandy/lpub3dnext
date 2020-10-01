@@ -915,7 +915,7 @@ void lcApplication::ShowPreferencesDialog()
 	Options.MouseShortcutsDefault = false;
 
 /*** LPub3D Mod - preview widget ***/
-	lcPreviewPosition previewDocked = Options.Preferences.mPreviewPosition;
+	lcPreviewPosition previewDockable = Options.Preferences.mPreviewPosition;
 /*** LPub3D Mod end ***/
 /*** LPub3D Mod - preference refresh ***/
 	if (Preferences::usingNativeRenderer)
@@ -945,8 +945,8 @@ void lcApplication::ShowPreferencesDialog()
 		return;
 
 /*** LPub3D Mod - preview widget ***/
-	if (previewDocked != Options.Preferences.mPreviewPosition)
-		emit gMainWindow->togglePreviewWidgetSig(Options.Preferences.mPreviewPosition == lcPreviewPosition::Docked);
+	if (previewDockable != Options.Preferences.mPreviewPosition)
+		emit gMainWindow->togglePreviewWidgetSig(Options.Preferences.mPreviewPosition == lcPreviewPosition::Dockable);
 /*** LPub3D Mod end ***/
 
 	bool LanguageChanged = Options.Language != lcGetProfileString(LC_PROFILE_LANGUAGE);

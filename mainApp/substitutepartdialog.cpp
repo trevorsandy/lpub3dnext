@@ -542,22 +542,19 @@ void SubstitutePartDialog::showPartPreview(Which attribute)
 
         if (Preview && ViewWidget) {
             if (!Preview->SetCurrentPiece(partType, colorCode))
-                emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %2 failed.").arg(partType));
-
+                emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %1 failed.").arg(partType));
             previewLayout->addWidget(ViewWidget);
             ViewWidget->preferredSize = ui->previewFrame->size();
             float Scale               = ViewWidget->deviceScale();
             Preview->mWidth           = ViewWidget->width()  * Scale;
             Preview->mHeight          = ViewWidget->height() * Scale;
             mViewWidgetEnabled        = true;
-            Preview->ZoomExtents();
         } else {
-            emit lpubAlert->messageSig(LOG_ERROR, QString("Preview %1 failed.").arg(partType));
+            emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %1 failed.").arg(partType));
         }
     } else if (Preview) {
         if (!Preview->SetCurrentPiece(partType, colorCode))
-            emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %2 failed.").arg(partType));
-        Preview->ZoomExtents();
+            emit lpubAlert->messageSig(LOG_ERROR, QString("Part preview for %1 failed.").arg(partType));
     }
 }
 

@@ -563,10 +563,9 @@ void Gui::create3DDockWindows()
     tabifyDockWidget(viewerDockWindow, gMainWindow->GetTimelineToolBar());
 
     // Preview
-    if (lcGetPreferences().mPreviewPosition == lcPreviewPosition::Docked)
-    {
+    previewDockWindow = nullptr;
+    if (lcGetPreferences().mPreviewPosition == lcPreviewPosition::Dockable)
         createPreviewWidget();
-    }
 
     connect(viewerDockWindow,                    SIGNAL (topLevelChanged(bool)), this, SLOT (toggleLCStatusBar(bool)));
     connect(viewerDockWindow,                    SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
@@ -605,33 +604,29 @@ bool Gui::createPreviewWidget()
 void Gui::previewPiece(const QString &partType, int colorCode)
 {
     if (Preview) {
-        if (isSubmodel(partType)) {
-            if (!Preview->LoadCurrentModel(partType, colorCode))
-                messageSig(LOG_ERROR, QString("Submodel preview for %2 failed.").arg(partType));
-        } else {
-            if (!Preview->SetCurrentPiece(partType, colorCode))
-                messageSig(LOG_ERROR, QString("Part preview for %2 failed.").arg(partType));
-        }
-        Preview->ZoomExtents();
-    } else {
-        messageSig(LOG_ERROR, QString("Preview failedr."));
+        if (!Preview->SetCurrentPiece(partType, colorCode))
+            messageSig(LOG_ERROR, QString("Part preview for % failed.").arg(partType));
     }
 }
 
-void Gui::togglePreviewWidget(bool b)
+void Gui::togglePreviewWidget(bool visible)
 {
-    if (Preview) {
-    QList<QAction*> viewActions = viewMenu->actions();
-    foreach (QAction *viewAct, viewActions) {
-        if (viewAct->text() == "3DPreview") {
-            viewAct->setChecked(b);
-            viewAct->setVisible(b);
-             messageSig(LOG_DEBUG, QString("%1 window %2.")
-                        .arg(viewAct->text()).arg(b ? "Displayed" : "Hidden"));
-            break;
+    if (Preview && previewDockWindow) {
+        if (visible)
+            previewDockWindow->show();
+        else
+            previewDockWindow->hide();
+        QList<QAction*> viewActions = viewMenu->actions();
+        foreach (QAction *viewAct, viewActions) {
+            if (viewAct->text() == "3DPreview") {
+                viewAct->setChecked(visible);
+                viewAct->setVisible(visible);
+                messageSig(LOG_DEBUG, QString("%1 window %2.")
+                           .arg(viewAct->text()).arg(visible ? "Displayed" : "Hidden"));
+                break;
+            }
         }
-    }
-    } else if (b) {
+    } else if (visible) {
         createPreviewWidget();
     }
 }

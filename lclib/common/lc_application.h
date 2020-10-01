@@ -35,7 +35,7 @@ enum class lcPreviewLocation
 
 enum class lcPreviewPosition
 {
-	Docked,
+	Dockable,
 	Floating,
 	Viewport
 };

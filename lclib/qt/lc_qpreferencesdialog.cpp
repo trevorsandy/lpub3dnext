@@ -241,6 +241,10 @@ lcQPreferencesDialog::lcQPreferencesDialog(QWidget* Parent, lcPreferencesDialogO
 /*** LPub3D Mod - preview widget ***/
 	on_PreviewViewSphereSizeCombo_currentIndexChanged(ui->PreviewViewSphereSizeCombo->currentIndex());
 	on_PreviewSizeCombo_currentIndexChanged(ui->PreviewSizeCombo->currentIndex());
+	on_PreviewPositionCombo_currentIndexChanged(ui->PreviewPositionCombo->currentIndex());
+	ui->PreviewLocationCombo->setEnabled(
+				ui->PreviewSizeCombo->currentIndex() != 0 &&
+				ui->PreviewPositionCombo->currentIndex() != 0);
 /*** LPub3D Mod end ***/    
 
 	updateCategories();
@@ -696,14 +700,16 @@ void lcQPreferencesDialog::on_PreviewViewSphereSizeCombo_currentIndexChanged(int
 void lcQPreferencesDialog::on_PreviewSizeCombo_currentIndexChanged(int Index)
 {
 	ui->PreviewLocationCombo->setEnabled(Index != 0);
-	ui->PreviewPositionCombo->setEnabled(Index != 0);
+	if (ui->PreviewPositionCombo->currentIndex() != 0)
+		ui->PreviewPositionCombo->setEnabled(Index != 0);
 	ui->PreviewAxisIconCheckBox->setEnabled(Index != 0);
+	ui->PreviewViewSphereCheckBox->setEnabled(Index != 0);
 }
 
 void lcQPreferencesDialog::on_PreviewPositionCombo_currentIndexChanged(int Index)
 {
-	ui->PreviewLocationCombo->setEnabled(Index != 0);
 	ui->PreviewSizeCombo->setEnabled(Index != 0);
+	ui->PreviewLocationCombo->setEnabled(Index != 0);
 }
 /*** LPub3D Mod end ***/  
 
