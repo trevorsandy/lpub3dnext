@@ -36,6 +36,7 @@
 #include "lc_library.h"
 
 #include "lc_qglwidget.h"
+#include "view.h"
 
 #include "lpubalert.h"
 #include "paths.h"
@@ -72,8 +73,29 @@ void PreviewDockWidget::ClearPreview()
     label->setText("");
 }
 
+PreviewWidget::PreviewWidget(View *view)
+: mView(view),
+  mLoader(new Project(true/*isPreview*/)),
+  mViewSphere(this/*Preview*/, false),
+  mIsPart(false),
+  mIsSubPreview(false)
+{
+    mTool        = LC_TOOL_SELECT;
+    mTrackTool   = LC_TRACKTOOL_NONE;
+    mTrackButton = lcTrackButton::None;
+
+    mLoader->SetActiveModel(0);
+    mModel  = mLoader->GetActiveModel();
+    mCamera = nullptr;
+
+    SetDefaultCamera();
+
+    mMouseDown = false;
+}
+
 PreviewWidget::PreviewWidget(bool subPreview)
-: mLoader(new Project(true/*isPreview*/)),
+: mView(nullptr),
+  mLoader(new Project(true/*isPreview*/)),
   mViewSphere(this/*Preview*/, subPreview),
   mIsPart(false),
   mIsSubPreview(subPreview)
@@ -443,17 +465,19 @@ lcCursor PreviewWidget::GetCursor() const
 
 void PreviewWidget::OnInitialUpdate()
 {
-    MakeCurrent();
+//    MakeCurrent();
 
-    mContext->SetDefaultState();
+//    mContext->SetDefaultState();
 }
 
-void PreviewWidget::OnDraw()
+void PreviewWidget::Draw()
 {
+    return;
     if (!mModel)
         return;
 
-    lcPreferences& Preferences = lcGetPreferences();
+    const lcPreferences& Preferences = lcGetPreferences();
+
     const bool DrawInterface = mWidget != nullptr;
 
     mScene.SetAllowLOD(Preferences.mAllowLOD && mWidget != nullptr);
@@ -467,9 +491,18 @@ void PreviewWidget::OnDraw()
 
     mScene.End();
 
-    mContext->SetDefaultState();
-
-    mContext->SetViewport(0, 0, mWidth, mHeight);
+    if (Preferences.mPreviewPosition == lcPreviewPosition::Viewport) {
+        mContext = mView->mContext;
+        int ViewportWidth  = mView->mWidth;
+        int ViewportHeight = mView->mHeight;
+        lcPreviewLocation Location = Preferences.mPreviewLocation;
+        int Left   = (Location == lcPreviewLocation::BottomLeft || Location == lcPreviewLocation::TopLeft)     ? 0 : ViewportWidth  - mWidth;
+        int Bottom = (Location == lcPreviewLocation::BottomLeft || Location == lcPreviewLocation::BottomRight) ? 0 : ViewportHeight - mHeight;
+        mContext->SetViewport(Left, Bottom, mWidth, mHeight);
+    } else {
+        mContext->SetDefaultState();
+        mContext->SetViewport(0, 0, mWidth, mHeight);
+    }
 
     mModel->DrawBackground(this);
 
@@ -492,6 +525,12 @@ void PreviewWidget::OnDraw()
     }
 
     mContext->ClearResources();
+}
+
+void PreviewWidget::OnDraw()
+{
+    if (lcGetPreferences().mPreviewPosition != lcPreviewPosition::Viewport)
+        Draw();
 }
 
 void PreviewWidget::OnUpdateCursor()
@@ -517,6 +556,8 @@ void PreviewWidget::OnLeftButtonDown()
         mTrackTool = OverrideTool;
         OnUpdateCursor();
     }
+
+    mMouseDown = true;
 
     OnButtonDown(lcTrackButton::Left);
 }

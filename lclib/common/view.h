@@ -6,6 +6,10 @@
 #include "lc_viewsphere.h"
 #include "lc_commands.h"
 
+/*** LPub3D Mod - preview widget ***/
+#include "previewwidget.h"
+/*** LPub3D Mod end ***/
+
 enum class lcTrackButton
 {
 	None,
@@ -212,6 +216,9 @@ protected:
 	QImage mRenderImage;
 	std::pair<lcFramebuffer, lcFramebuffer> mRenderFramebuffer;
 	lcViewSphere mViewSphere;
+/*** LPub3D Mod - preview widget ***/
+    PreviewWidget mPreview;
+/*** LPub3D Mod end ***/
 
 	lcVertexBuffer mGridBuffer;
 	int mGridSettings[7];

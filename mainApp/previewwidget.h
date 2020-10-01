@@ -32,6 +32,7 @@
 #include <QString>
 #include "lc_global.h"
 #include "lc_glwidget.h"
+#include "lc_math.h"
 #include "lc_scene.h"
 #include "lc_viewsphere.h"
 #include "lc_commands.h"
@@ -39,6 +40,7 @@
 #include "camera.h"
 
 class QLabel;
+class View;
 class Project;
 class lcModel;
 class lcPiece;
@@ -79,6 +81,7 @@ public:
         LC_TRACKTOOL_COUNT
     };
 
+    PreviewWidget(View *view);
     PreviewWidget(bool subPreview = false);
     ~PreviewWidget();
 
@@ -117,6 +120,7 @@ public:
     void SetCamera(lcCamera* Camera);
     void SetDefaultCamera();
     void ZoomExtents();
+    void Draw();
 
     // exclusively called from viewSphere
     void SetViewpoint(const lcVector3& Position);
@@ -148,6 +152,7 @@ protected:
     void StopTracking(bool Accept);
     void OnButtonDown(lcTrackButton TrackButton);
 
+    View* mView;
     Project* mLoader;
     lcModel* mModel;
     lcCamera* mCamera;
@@ -166,6 +171,7 @@ protected:
     bool mTrackUpdated;
     int mMouseDownX;
     int mMouseDownY;
+    bool mMouseDown;
 };
 
 extern class PreviewWidget* gPreviewWidget;

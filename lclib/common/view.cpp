@@ -20,8 +20,11 @@ lcVertexBuffer View::mRotateMoveVertexBuffer;
 lcIndexBuffer View::mRotateMoveIndexBuffer;
 
 View::View(lcModel* Model)
-	: mViewSphere(this)
+	: mViewSphere(this),
+/*** LPub3D Mod - preview widget ***/
+	  mPreview(this)
 {
+/*** LPub3D Mod end ***/
 	mModel = Model;
 	mActiveSubmodelInstance = nullptr;
 	mCamera = nullptr;
@@ -1011,6 +1014,11 @@ void View::OnDraw()
 			DrawSelectZoomRegionOverlay();
 		else if (Tool == LC_TOOL_ROTATE_VIEW && mTrackButton == lcTrackButton::None)
 			DrawRotateViewOverlay();
+
+/*** LPub3D Mod - preview widget ***/
+		if (Preferences.mPreviewPosition == lcPreviewPosition::Viewport && Preferences.mPreviewEnabled)
+			mPreview.Draw();
+/*** LPub3D Mod end ***/
 
 		mViewSphere.Draw();
 		DrawViewport();
