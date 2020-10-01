@@ -3028,8 +3028,8 @@ Gui::Gui()
             parmsWindow,    SLOT( displayParmsFile   (const QString &)));
 
     // Gui - EditWindow
-    connect(editWindow,           SIGNAL(previewPieceSig(const QString &,int)),
-            this,                 SLOT(previewPiece(const QString &,int)));
+    connect(editWindow,     SIGNAL(previewPieceSig(const QString &,int)),
+            this,           SLOT(previewPiece(const QString &,int)));
 
     connect(this,           SIGNAL(displayFileSig(LDrawFile *, const QString &)),
             editWindow,     SLOT(  displayFile   (LDrawFile *, const QString &)));

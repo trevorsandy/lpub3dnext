@@ -52,7 +52,6 @@ PreviewWidget::PreviewWidget(bool subPreview)
 
     mLoader->SetActiveModel(0);
     mModel = mLoader->GetActiveModel();
-    mActiveSubmodelInstance = nullptr;
     mCamera = nullptr;
 
     SetDefaultCamera();
@@ -69,7 +68,6 @@ PreviewWidget::PreviewWidget()
 
     mLoader->SetActiveModel(0);
     mModel = mLoader->GetActiveModel();
-    mActiveSubmodelInstance = nullptr;
     mCamera = nullptr;
 
     SetDefaultCamera();
@@ -435,7 +433,7 @@ void PreviewWidget::OnDraw()
 
     mScene.Begin(mCamera->mWorldView);
 
-    mScene.SetActiveSubmodelInstance(mActiveSubmodelInstance, mActiveSubmodelTransform);
+//    mScene.SetActiveSubmodelInstance(mActiveSubmodelInstance, mActiveSubmodelTransform);
 
     mScene.SetDrawInterface(DrawInterface);
 

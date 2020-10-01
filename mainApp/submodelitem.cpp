@@ -44,10 +44,6 @@
 #include "dependencies.h"
 
 #include "lc_qglwidget.h"
-#include "lc_model.h"
-#include "lc_library.h"
-#include "project.h"
-
 #include "previewwidget.h"
 
 const Where &SubModel::topOfStep()

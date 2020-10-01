@@ -34,6 +34,7 @@
 #include "lc_scene.h"
 #include "lc_viewsphere.h"
 #include "lc_commands.h"
+#include "lc_application.h"
 
 class Project;
 class lcModel;
@@ -127,8 +128,6 @@ protected:
     lcModel* mModel;
     lcCamera* mCamera;
     lcViewSphere mViewSphere;
-    lcPiece* mActiveSubmodelInstance;
-    lcMatrix44 mActiveSubmodelTransform;
 
     lcScene mScene;
 

@@ -56,12 +56,9 @@
 #include "paths.h"
 #include "lpub_preferences.h"
 
-#include "lc_qglwidget.h"
-#include "lc_model.h"
-#include "lc_library.h"
-#include "project.h"
 #include "lc_mainwindow.h"
 
+#include "lc_qglwidget.h"
 #include "previewwidget.h"
 
 EditWindow *editWindow;

@@ -36,14 +36,10 @@
 #include "pli.h"
 #include "color.h"
 
+#include "pieceinf.h"
+
 #include "lc_qglwidget.h"
 #include "previewwidget.h"
-#include "messageboxresizable.h"
-#include "pieceinf.h"
-#include "lc_application.h"
-#include "lc_model.h"
-#include "lc_library.h"
-#include "project.h"
 
 SubstitutePartDialog::SubstitutePartDialog(
     const QStringList &attributes,

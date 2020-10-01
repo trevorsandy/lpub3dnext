@@ -13,14 +13,8 @@
 
 /*** LPub3D Mod - Part selection preview ***/
 #include "lc_qglwidget.h"
-#include "lc_model.h"
-#include "lc_library.h"
-#include "project.h"
-#include "piece.h"
-
 #include "previewwidget.h"
 #include "lpubalert.h"
-#include "paths.h"
 /*** LPub3D Mod end ***/
 
  Q_DECLARE_METATYPE(QList<int>)

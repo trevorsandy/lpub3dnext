@@ -593,6 +593,8 @@ bool Gui::createPreviewWidget()
 
         tabifyDockWidget(viewerDockWindow, previewDockWindow);
 
+        connect(previewDockWindow, SIGNAL (topLevelChanged(bool)), this, SLOT (enableWindowFlags(bool)));
+
         return true;
     } else {
         messageSig(LOG_ERROR, QString("Preview failed."));
@@ -622,6 +624,7 @@ void Gui::togglePreviewWidget(bool b)
     QList<QAction*> viewActions = viewMenu->actions();
     foreach (QAction *viewAct, viewActions) {
         if (viewAct->text() == "3DPreview") {
+            viewAct->setChecked(b);
             viewAct->setVisible(b);
              messageSig(LOG_DEBUG, QString("%1 window %2.")
                         .arg(viewAct->text()).arg(b ? "Displayed" : "Hidden"));
