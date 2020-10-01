@@ -625,8 +625,8 @@ void Gui::closeFile()
   editWindow->textEdit()->document()->clear();
   editWindow->textEdit()->document()->setModified(false);
   mpdCombo->clear();
-  if (Preview)
-      Preview->ClearPreview();
+  if (PreviewWidget)
+      PreviewWidget->ClearPreview();
   mpdCombo->setEnabled(false);
   setGoToPageCombo->clear();
   setGoToPageCombo->setEnabled(false);

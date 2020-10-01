@@ -420,7 +420,7 @@ class lcPiecesLibrary;
 class lcModel;
 class lcPartSelectionWidget;
 class lcQGLWidget;
-class PreviewWidget;
+class PreviewDockWidget;
 class View;
 
 class ColourPartListWorker;
@@ -1750,9 +1750,8 @@ private:
 
   QDockWidget       *previewDockWindow;
 
-  // Preview widget
-  lcQGLWidget       *ViewWidget;
-  PreviewWidget     *Preview;
+  // Preview widget;
+  PreviewDockWidget *PreviewWidget;
 
   // Menus
   QMenu    *fileMenu;

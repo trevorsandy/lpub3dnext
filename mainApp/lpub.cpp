@@ -2928,11 +2928,9 @@ Gui::Gui()
     Preferences::publishingPreferences();
     Preferences::exportPreferences();
 
-    ViewWidget     = nullptr;
-    Preview        = nullptr;
-
-    displayPageNum = 1;
-    numPrograms    = 0;
+    PreviewWidget = nullptr;
+    displayPageNum    = 1;
+    numPrograms       = 0;
 
     processOption                   = EXPORT_ALL_PAGES;
     exportMode                      = EXPORT_PDF;

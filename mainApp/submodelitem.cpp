@@ -1266,6 +1266,7 @@ void SMGraphicsPixmapItem::previewSubModel()
             pos.setY(desktop.bottom() - ViewWidget->height());
         ViewWidget->move(pos);
 
+        ViewWidget->setMinimumSize(100,100);
         ViewWidget->show();
         ViewWidget->setFocus();
     } else {

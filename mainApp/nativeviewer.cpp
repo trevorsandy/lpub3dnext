@@ -34,8 +34,6 @@
 #include "lc_qglwidget.h"
 #include "previewwidget.h"
 #include "pieceinf.h"
-#include "lc_application.h"
-#include "lc_model.h"
 #include "lc_library.h"
 #include "project.h"
 #include "lc_mainwindow.h"
@@ -577,16 +575,14 @@ void Gui::create3DDockWindows()
 
 bool Gui::createPreviewWidget()
 {
-    Preview = new PreviewWidget();
+    PreviewWidget = new PreviewDockWidget();
 
-    ViewWidget = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
-
-    if (Preview && ViewWidget) {
+    if (PreviewWidget) {
         previewDockWindow = new QDockWidget(tr("3DPreview"), this);
         previewDockWindow->setWindowTitle(trUtf8("3DPreview"));
         previewDockWindow->setObjectName("PreviewDockWindow");
         previewDockWindow->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-        previewDockWindow->setWidget(ViewWidget);
+        previewDockWindow->setWidget(PreviewWidget);
         addDockWidget(Qt::RightDockWidgetArea, previewDockWindow);
         viewMenu->addAction(previewDockWindow->toggleViewAction());
 
@@ -603,15 +599,15 @@ bool Gui::createPreviewWidget()
 
 void Gui::previewPiece(const QString &partType, int colorCode)
 {
-    if (Preview) {
-        if (!Preview->SetCurrentPiece(partType, colorCode))
+    if (PreviewWidget) {
+        if (!PreviewWidget->SetCurrentPiece(partType, colorCode))
             messageSig(LOG_ERROR, QString("Part preview for % failed.").arg(partType));
     }
 }
 
 void Gui::togglePreviewWidget(bool visible)
 {
-    if (Preview && previewDockWindow) {
+    if (previewDockWindow) {
         if (visible)
             previewDockWindow->show();
         else

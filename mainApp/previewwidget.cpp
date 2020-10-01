@@ -35,11 +35,42 @@
 #include "texfont.h"
 #include "lc_library.h"
 
-#include "ldrawfiles.h"
+#include "lc_qglwidget.h"
+
 #include "lpubalert.h"
 #include "paths.h"
 
 PreviewWidget* gPreviewWidget;
+
+PreviewDockWidget::PreviewDockWidget(QMainWindow *parent)
+    :QMainWindow(parent)
+{
+    Preview    = new PreviewWidget();
+    ViewWidget = new lcQGLWidget(nullptr, Preview, true/*isView*/, true/*isPreview*/);
+    setCentralWidget(ViewWidget);
+    setMinimumSize(200, 200);
+    toolBar = addToolBar(tr("PreviewDescription"));
+    toolBar->setObjectName("PreviewDescription");
+    toolBar->setMovable(false);
+    label = new QLabel("");
+    toolBar->addWidget(label);
+}
+
+bool PreviewDockWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
+{
+    label->setText("Loading...");
+    if (Preview->SetCurrentPiece(PartType, ColorCode)) {
+        label->setText(Preview->GetDescription());
+        return true;
+    }
+    return false;
+}
+
+void PreviewDockWidget::ClearPreview()
+{
+    Preview->ClearPreview();
+    label->setText("");
+}
 
 PreviewWidget::PreviewWidget(bool subPreview)
 : mLoader(new Project(true/*isPreview*/)),
@@ -52,7 +83,7 @@ PreviewWidget::PreviewWidget(bool subPreview)
     mTrackButton = lcTrackButton::None;
 
     mLoader->SetActiveModel(0);
-    mModel = mLoader->GetActiveModel();
+    mModel  = mLoader->GetActiveModel();
     mCamera = nullptr;
 
     SetDefaultCamera();
@@ -79,6 +110,7 @@ bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
     PieceInfo* Info = Library->FindPiece(PartType.toLatin1().constData(), nullptr, false, false);
     if (Info) {
         mIsPart = true;
+        mDescription = Info->m_strDescription;
         lcModel* ActiveModel = GetActiveModel();
 
         ActiveModel->SelectAllPieces();
@@ -103,7 +135,6 @@ bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
         emit lpubAlert->messageSig(LOG_DEBUG,
                                    QString("Preview PartType: %1, Name: %2, ColorCode: %3, ColorIndex: %4")
                                    .arg(Piece->GetID()).arg(Piece->GetName()).arg(ColorCode).arg( Piece->mColorIndex));
-        ZoomExtents();
         Piece = nullptr;
     } else {
         QString ModelPath = QString("%1/%2/%3")
@@ -121,8 +152,12 @@ bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
         mModel = mLoader->GetActiveModel();
         if (ColorCode != LDRAW_MATERIAL_COLOUR)
             mModel->SetUnoffPartColorCode(ColorCode);
-        ZoomExtents();
+        if (!mModel->GetProperties().mDescription.isEmpty())
+            mDescription = mModel->GetProperties().mDescription;
+        else
+            mDescription = PartType;
     }
+    ZoomExtents();
 
     return true;
 }
@@ -425,8 +460,6 @@ void PreviewWidget::OnDraw()
     mScene.SetLODDistance(Preferences.mMeshLODDistance);
 
     mScene.Begin(mCamera->mWorldView);
-
-//    mScene.SetActiveSubmodelInstance(mActiveSubmodelInstance, mActiveSubmodelTransform);
 
     mScene.SetDrawInterface(DrawInterface);
 
