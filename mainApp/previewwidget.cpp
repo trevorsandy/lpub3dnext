@@ -95,7 +95,7 @@ bool PreviewWidget::LoadCurrentModel(const QString& ModelName, int ColorCode)
             .arg(Paths::tmpDir)
             .arg(ModelName);
 
-    if (!mLoader->Load(ModelPath, ColorCode)) {
+    if (!mLoader->Load(ModelPath)) {
         emit lpubAlert->messageSig(LOG_DEBUG,QString("Failed to load '%1'.").arg(ModelPath));
         return false;
     }
@@ -103,21 +103,23 @@ bool PreviewWidget::LoadCurrentModel(const QString& ModelName, int ColorCode)
     mLoader->SetActiveModel(0);
     lcGetPiecesLibrary()->RemoveTemporaryPieces();
     mModel = mLoader->GetActiveModel();
+    if (ColorCode != LDRAW_MATERIAL_COLOUR)
+        mModel->SetUnoffPartColorCode(ColorCode);
 
     return true;
 }
 
 bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
 {
-    mIsPart = true;
-    lcPiecesLibrary* Library = lcGetPiecesLibrary();
-    lcModel* ActiveModel = GetActiveModel();
-
-    ActiveModel->SelectAllPieces();
-    ActiveModel->DeleteSelectedObjects();
-
+    lcPiecesLibrary  *Library = lcGetPiecesLibrary();
     PieceInfo* Info = Library->FindPiece(PartType.toLatin1().constData(), nullptr, false, false);
     if (Info) {
+        mIsPart = true;
+        lcModel* ActiveModel = GetActiveModel();
+
+        ActiveModel->SelectAllPieces();
+        ActiveModel->DeleteSelectedObjects();
+
         Library->LoadPieceInfo(Info, false, true);
         Library->WaitForLoadQueue();
 
@@ -138,9 +140,25 @@ bool PreviewWidget::SetCurrentPiece(const QString &PartType, int ColorCode)
                                    QString("Preview PartType: %1, Name: %2, ColorCode: %3, ColorIndex: %4")
                                    .arg(Piece->GetID()).arg(Piece->GetName()).arg(ColorCode).arg( Piece->mColorIndex));
         Piece = nullptr;
-        return true;
+    } else {
+        QString ModelPath = QString("%1/%2/%3")
+                .arg(QDir::currentPath())
+                .arg(Paths::tmpDir)
+                .arg(PartType);
+
+        if (!mLoader->Load(ModelPath)) {
+            emit lpubAlert->messageSig(LOG_DEBUG,QString("Failed to load '%1'.").arg(ModelPath));
+            return false;
+        }
+
+        mLoader->SetActiveModel(0);
+        lcGetPiecesLibrary()->RemoveTemporaryPieces();
+        mModel = mLoader->GetActiveModel();
+        if (ColorCode != LDRAW_MATERIAL_COLOUR)
+            mModel->SetUnoffPartColorCode(ColorCode);
     }
-    return false;
+
+    return true;
 }
 
 void PreviewWidget::SetDefaultCamera()
