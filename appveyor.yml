@@ -1,0 +1,336 @@
+# Build and check LPub3D x86 and x86_64 architectures unsing Qt/MinGW/VS2017 platforms
+# Trevor SANDY <trevor.sandy@gmail.com>
+# Last Update: August 21, 2020
+# Copyright (c) 2017 - 2020 by Trevor SANDY
+#
+version: 'LPub3D-AV-Build-{build}'
+
+branches:
+  only:
+    - master
+
+clone_folder: c:\projects\lpub3dnext
+
+# Skip automatic cloning because we want to restore cached items in the clone directory first
+clone_script: echo skip
+
+# We're caching:
+# LDraw parts library - used for testing renderers
+# Built renderers - LDGLite, LDView, and LPub3D-Trace (POV-Ray)
+cache:
+ - '$(APPVEYOR_BUILD_FOLDER)\LDraw'
+ - '$(APPVEYOR_BUILD_FOLDER)\LDrawLibs'
+ - '$(APPVEYOR_BUILD_FOLDER)\$(LP3D_DIST_DIR)'
+
+#shallow_clone: true
+
+image: Visual Studio 2015
+
+skip_commits:
+  files:
+   - mainApp\linuxfiledistro.pri
+   - mainApp\macosfiledistro.pri
+   - builds\linux\
+   - builds\macx\
+   - builds\check\build_check.sh
+   - builds\utilities\mesa\
+   - builds\utilities\ci\travis\
+   - builds\utilities\dmg-utils\
+   - builds\utilities\crete-dmg
+   - builds\utilities\CreateRenderers.sh
+   - builds\utilities\update-config-files.sh
+   - .travis.yml
+
+configuration: release
+
+matrix:
+  fast_finish: true
+
+# The following variables can be set to true from
+# AppVeyor Site->Project->Settings->Environment Variables
+# LP3D_COMPILE_SOURCE_VAR    ; compile source
+# LP3D_SKIP_APPVEYOR_VAR     ; skip AppVeyor build
+# LP3D_BUILD_PKG_VAR         ; trigger package build
+# LP3D_TEST_SF_DEPLOY_VAR    ; deploy SourceForge
+# LP3D_SKIP_SF_DEPLOY_VAR    ; skip SourceForge deploy
+# LP3D_CLEAR_AVCACHE_VAR     ; delete cache
+# LP3D_BUILD_RENDERERS_VAR   ; build specified renderer(s) in compile only configuration
+# LP3D_BUILD_LDGLITE_VAR     ; rebuild LDGLite
+# LP3D_BUILD_LDVIEW_VAR      ; rebuild LDView
+# LP3D_BUILD_POVRAY_VAR      ; rebuild LPub3D-Trace (POV-Ray)
+# LP3D_UPDATE_LDRAW_LIBS_VAR ; update cached LDraw libraries valid values are: true(all) | official | unofficial | tente | vexiq
+#
+# Set LP3D_COMPILE_SOURCE_VAR to enable LP3D_COMPILE_SOURCE (compile source only)
+#
+environment:
+  LP3D_PACKAGE: LPub3D
+  LP3D_GIT_DEPTH: 150000
+  LP3D_PACKAGE_PATH: builds\windows\$(configuration)
+  LP3D_DIST_DIR: lpub3d_windows_3rdparty
+  LP3D_DIST_DIR_PATH: $(APPVEYOR_BUILD_FOLDER)\$(LP3D_DIST_DIR)
+  LP3D_SECURE_DIR: builds\utilities\ci\secure
+  LP3D_RELEASE_DESCRIPTION: "LPub3D - An LDraw™ editor for LEGO® style digital building instructions."
+  SECURE_AV_SECRET:
+    secure: nQtdZL7czHUCbI5HicAKEwLHmW88oGm9Y55LPalj8L4=
+  SECURE_SF_SECRET:
+    secure: p0FZK2sONLxKjc/ZuilFN5V2JP1Rd+WtFDOLReo0LvU=
+  SECURE_SF_SALT:
+    secure: ctyrE7TNgQql4AA0u7agp0DDW698jIFMLiN1KJjKLIS/BOm5cZqkHKSxUhBPjRb9GgsFm5oFFq32WzicWbEfUQ==
+
+# Build package if commit message contains [build pkg]
+# Parse the commit message for 3rd party build override
+# As 3rd party items are not expected to change often
+# We cache them to speed up the build. If/when it is necessary
+# to build one of the items, we signal with 1 in the commit message
+# The format is [build pkg 1 1 1] to build all 3rd party itmes.
+# The first position is LDGlite, the second is LDView and the
+# third is LPub3D_Trace (POV-Ray). Alternatively you may choose
+# to build only one of the items in which case the settings would
+# be ...1 0 0 to only build the LDGlite.
+# Deploy package if pushed tag exists and has a valid format (vN.N.N[_A])
+# Automatically deploy to GitHub Release and Sourceforge.net.
+# Skip Sourceforge.net if git annotation contains [skip sfr]
+init:
+ - ps: cmd.exe /c %windir%\system32\tzutil.exe /s "Central Europe Standard Time"
+ - ps: write-host "Building ${env:LP3D_PACKAGE} x86 and x86_64 architectures..."
+ - ps: write-host "Windows Version:" (Get-ItemProperty -Path c:\windows\system32\hal.dll).VersionInfo.FileVersion
+ - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+ - ps: |
+      If ($env:LP3D_SKIP_APPVEYOR_VAR -eq "true") {
+         write-host "Exit build detected."
+         Exit-AppveyorBuild
+      }
+ - ps: |
+      If ($env:LP3D_TEST_SF_DEPLOY_VAR -eq "true") {
+         write-host "Test Sourceforge deploy detected."
+      }
+ - ps: |
+      If ($env:APPVEYOR_REPO_COMMIT_MESSAGE.ToLower() -Like "*build pkg*") {
+        write-host "[build pkg] detected in commit message."
+        $env:LP3D_BUILD_PKG = "yes"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_PKG_VAR -eq "true") {
+        write-host "'Build package' detected in environment variable."
+        $env:LP3D_BUILD_PKG = "yes"
+        $env:LP3D_CONTINUOUS_BUILD_PKG = "false"
+      }
+ - ps: |
+      If ($env:LP3D_COMPILE_SOURCE_VAR -eq "true") {
+        write-host "'Compile source' detected in environment variable."
+        $env:LP3D_COMPILE_SOURCE = "true"
+        $env:LP3D_BUILD_PKG = "false"
+        $env:LP3D_CONTINUOUS_BUILD_PKG = "false"
+      }
+ - ps: |
+     If ($env:LP3D_UPDATE_LDRAW_LIBS_VAR) {
+       write-host "'Update LDraw libraries equal $env:LP3D_UPDATE_LDRAW_LIBS_VAR' detected in environment variable."
+     }
+ - ps: |
+      If (($env:APPVEYOR_REPO_TAG -eq "true") -And ($env:LP3D_COMPILE_SOURCE -ne "true")) {
+        If ([regex]::Match($env:APPVEYOR_REPO_TAG_NAME, '^continuous$').Success) {
+          If ($env:APPVEYOR_PROJECT_NAME -eq "lpub3d") {
+             write-host "Release tag '$env:APPVEYOR_REPO_TAG_NAME' detected."
+          } Else {
+             write-host "Pre-release tag '$env:APPVEYOR_REPO_TAG_NAME' detected."
+          }
+          $env:LP3D_BUILD_PKG = "yes"
+          $env:LP3D_DEPLOY_PKG = "false"
+          $env:LP3D_CONTINUOUS_BUILD_PKG = "true"
+        } ElseIf ([regex]::Match($env:APPVEYOR_REPO_TAG_NAME, '^(?!$)(?:v[0-9]+\.[0-9]+\.[0-9]+_?[^\W]*)?$').Success) {
+          write-host "Deploy tag $env:APPVEYOR_REPO_TAG_NAME detected."
+          $env:LP3D_BUILD_PKG = "yes"
+          $env:LP3D_DEPLOY_PKG = "true"
+          $env:LP3D_CONTINUOUS_BUILD_PKG = "false"
+        } Else {
+          write-host "WARNING - Tag $env:APPVEYOR_REPO_TAG_NAME detected but is not a valid Deploy Tag. Deploy ingored."
+        }
+      } Else {
+        $env:LP3D_DEPLOY_PKG = "false"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_PKG -eq "yes") {
+        If ($env:APPVEYOR_REPO_COMMIT_MESSAGE -Match '[^\S]\s?([0-1]?\s?[0-1]?\s?[0-1]?)\].*$') {
+          $env:LP3D_BUILD_LDGLITE = $matches[1].substring(0,1)
+          $env:LP3D_BUILD_LDVIEW = $matches[1].substring(2,1)
+          $env:LP3D_BUILD_POVRAY = $matches[1].substring(4,1)
+        }
+        If ($env:LP3D_BUILD_LDGLITE -eq "1") {
+          write-host "'Build LDGLite' detected."
+        }
+        If ($env:LP3D_BUILD_LDVIEW -eq "1") {
+          write-host "'Build LDView' detected."
+        }
+        If ($env:LP3D_BUILD_POVRAY -eq "1") {
+          write-host "'LPub3D-Trace' detected."
+        }          
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_LDGLITE_VAR -eq "true") {
+        write-host "'Build LDGLite' detected in environment variable."
+        $env:LP3D_BUILD_LDGLITE = "1"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_LDVIEW_VAR -eq "true") {
+        write-host "'Build LDView' detected in environment variable."
+        $env:LP3D_BUILD_LDVIEW = "1"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_POVRAY_VAR -eq "true") {
+        write-host "'Build LPub3D-Trace' detected in environment variable."
+        $env:LP3D_BUILD_POVRAY = "1"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_LDGLITE -eq "1") {
+        $env:LP3D_LDGLITE = "${env:LP3D_DIST_DIR_PATH}\ldglite-1.3"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_LDVIEW -eq "1") {
+        $env:LP3D_LDVIEW = "${env:LP3D_DIST_DIR_PATH}\ldview-4.4"
+      }
+ - ps: |
+      If ($env:LP3D_BUILD_POVRAY -eq "1") {
+        $env:LP3D_POVRAY = "${env:LP3D_DIST_DIR_PATH}\lpub3d_trace_cui-3.8"
+      }
+ - ps: |
+      If (($env:APPVEYOR_REPO_COMMIT_MESSAGE.ToLower().Contains("[clear avcache]")) -or ($env:LP3D_CLEAR_AVCACHE_VAR -eq "true")) {
+        If ($env:LP3D_CLEAR_AVCACHE_VAR -eq "true") {
+          write-host "Clear AppVeyor cache detected."
+        } else {
+          write-host "[clear avcache] detected."
+        }
+
+        $apiUrl = 'https://ci.appveyor.com/api'
+        $token = $env:SECURE_AV_SECRET
+        $headers = @{
+          "Authorization" = "Bearer $token"
+          "Content-type" = "application/json"
+        }
+
+        $accountName = $env:APPVEYOR_ACCOUNT_NAME
+        $projectSlug = $env:APPVEYOR_PROJECT_SLUG
+
+        $env:APPVEYOR_CACHE_SKIP_RESTORE  = "true"
+        Invoke-RestMethod -Uri "$apiUrl/projects/$accountName/$projectSlug/buildcache" -Headers $headers -Method DELETE
+
+        Write-Output "Build cache cleared."
+      }
+ - ps: $env:LP3D_RELEASE_LABEL = ("LPub3D " + ([TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, "Central European Standard Time").ToString('dd.MM.yyyy')))
+ - ps: Get-ChildItem Env:LP3D_* | Sort-Object name
+
+# Fetch the commit that triggered the AppVeyor build.
+# We don't use git clone because the 'clone_directory' is not empty (restored cached components were added in previous steps) - so the
+# git clone command will fail. Instead we use fetch and checkout to pretty much replicate the same behaviour as the default git clone.
+# This includes setting the clone depth, and fetching the last commit and previous tags. Lastly, we manage 3rd party items cache -
+# deleting a component will trigger a new build.
+install:
+ - cmd: git config --global core.autocrlf true
+ - cmd: git init %APPVEYOR_BUILD_FOLDER%
+ - cmd: cd %APPVEYOR_BUILD_FOLDER%
+ - cmd: git remote add origin https://github.com/%APPVEYOR_REPO_NAME%.git
+ - cmd: git fetch -qfup --depth=%LP3D_GIT_DEPTH% origin +%APPVEYOR_REPO_BRANCH% +refs/tags/*:refs/tags/*
+ - cmd: git checkout -qf %APPVEYOR_REPO_COMMIT%
+ - cmd: bash -lc "if test \"$LP3D_BUILD_LDGLITE\" = \"1\" && test -d \"$LP3D_LDGLITE\"; then rm -rf $LP3D_LDGLITE; if ! test -d \"$LP3D_LDGLITE\"; then echo cached $LP3D_LDGLITE deleted; fi; fi"
+ - cmd: bash -lc "if test \"$LP3D_BUILD_LDVIEW\" = \"1\" && test -d \"$LP3D_LDVIEW\"; then rm -rf $LP3D_LDVIEW; if ! test -d \"$LP3D_LDVIEW\"; then echo cached $LP3D_LDVIEW deleted; fi; fi"
+ - cmd: bash -lc "if test \"$LP3D_BUILD_POVRAY\" = \"1\" && test -d \"$LP3D_POVRAY\"; then rm -rf $LP3D_POVRAY; if ! test -d \"$LP3D_POVRAY\"; then echo cached $LP3D_POVRAY deleted; fi; fi"
+ - cmd: C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm openssh rsync > InstallSecureTransfer.log 2>&1"
+
+# There are 3 modes of execution 1. build the full package or 2. compile the source and 3 build the renderers.
+# The only difference in the script below is the '-ins[tall 3rd party renderers] flag present under build'
+build_script:
+ - ps: |
+      write-host "  Distribution Directory.........[$env:LP3D_PACKAGE_PATH]"
+      write-host "  Working Directory..............[$PWD]"
+      If ($env:LP3D_BUILD_PKG -eq "yes") {
+        cmd.exe /c builds\windows\AutoBuild.cmd -all -3rd -ins -chk 2`>`&1
+        $env:LP3D_ARTEFACT_ITEM_COUNT = (Get-ChildItem -Path $env:LP3D_PACKAGE_PATH -Recurse).count
+        write-host "`n  Build Archive Item Count...[$env:LP3D_ARTEFACT_ITEM_COUNT]"
+      } ElseIf ($env:LP3D_COMPILE_SOURCE -eq "true") {
+        cmd.exe /c builds\windows\AutoBuild.cmd -all -3rd -chk 2`>`&1
+      } ElseIf ($env:LP3D_BUILD_RENDERERS_VAR -eq "true") {
+        cmd.exe /c builds\windows\AutoBuild.cmd -all -ren 2`>`&1
+      }
+
+test: off
+
+# If build (vs. compile source) option selected, we execute the packaging script which creates
+# an NSIS executable from the built artefacts. Next all assets and pushed to AppVeyor 'Artifacts'.
+# The last step here is to deploy to Sourceforge if deploy tag is present, valid and does not
+# indicate 'skip sfr'. For SF deploy, I use a custom bash 'script provider' because this approach
+# offers more granularity and can be reused between AppVeyor and Travis - so write-once, run any.
+# On Appveyor, I use MinGW's OpenSSH and rsync (I don't think WLS is available in AppVeyor) to
+# process the file transfer to Sourceforge.net
+after_build:
+ - ps: |
+      If ($env:LP3D_BUILD_PKG -eq "yes" -And [int]$env:LP3D_ARTEFACT_ITEM_COUNT -gt 350) {
+        cmd.exe /c builds\windows\CreateExePkg.cmd 2`>`&1
+        builds\utilities\ci\set_ps_vars.ps1
+        Get-ChildItem Env:* -Include ("LP3D_BUILD_*","LP3D_VERSION*","LP3D_APP_*") | Sort-Object name
+        write-host "`n"
+        if (${env:LP3D_UPDATE_ASSETS}) {
+          $root = Resolve-Path .\${env:LP3D_UPDATE_ASSETS};   [IO.Directory]::GetFiles($root.Path, '*.*', 'AllDirectories') | % { Push-AppveyorArtifact $_ -FileName $_.Substring($root.Path.Length + 1) -DeploymentName ${env:LP3D_PACKAGE}-update-package }
+        } Else {
+          Write-Error -Message "env var LP3D_UPDATE_ASSETS is null." -ErrorAction Stop
+        }
+        if (${env:LP3D_DOWNLOAD_ASSETS}) {
+          $root = Resolve-Path .\${env:LP3D_DOWNLOAD_ASSETS}; [IO.Directory]::GetFiles($root.Path, '*.*', 'AllDirectories') | % { Push-AppveyorArtifact $_ -FileName $_.Substring($root.Path.Length + 1) -DeploymentName ${env:LP3D_PACKAGE}-download-package }
+        } Else {
+          Write-Error -Message "env var LP3D_DOWNLOAD_ASSETS is null." -ErrorAction Stop
+        }
+        if (${env:LP3D_RUNLOG_ASSETS}) {
+          $root = Resolve-Path .\${env:LP3D_RUNLOG_ASSETS}; [IO.Directory]::GetFiles($root.Path, '*.*', 'AllDirectories') | % { Push-AppveyorArtifact $_ -FileName $_.Substring($root.Path.Length + 1) -DeploymentName ${env:LP3D_PACKAGE}-runlog-package }
+        } Else {
+          Write-Error -Message "env var LP3D_RUNLOG_ASSETS is null." -ErrorAction Continue
+        }
+        If (($env:LP3D_DEPLOY_PKG -eq "true") -or ($env:LP3D_CONTINUOUS_BUILD_PKG -eq "true" -and  $env:APPVEYOR_PROJECT_NAME -eq "lpub3d") -or ($env:LP3D_TEST_SF_DEPLOY_VAR -eq "true")) {
+          write-host "`n"
+          If (((git tag -l -n $env:APPVEYOR_REPO_TAG_NAME) -NotLike "*skip sfr*") -and ($env:LP3D_SKIP_SF_DEPLOY_VAR -ne "true")) {
+            iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
+            cmd.exe /c appveyor-tools\secure-file -decrypt %LP3D_SECURE_DIR%\.sfdeploy_appveyor_rsa.enc -secret %SECURE_SF_SECRET% -salt %SECURE_SF_SALT%
+            C:\msys64\usr\bin\bash -lc 'cd $APPVEYOR_BUILD_FOLDER && chmod +x builds/utilities/ci/sfdeploy.sh && ./builds/utilities/ci/sfdeploy.sh 2>&1'
+          } Else {
+            write-host "Skip Sourceforge deploy detected - ["(git tag -l -n $env:APPVEYOR_REPO_TAG_NAME).Replace($env:APPVEYOR_REPO_TAG_NAME,"").Trim()"]."
+          }
+        }
+        If ($env:LP3D_CONTINUOUS_BUILD_PKG -eq "true") {
+          If ($env:APPVEYOR_PROJECT_NAME -eq "lpub3d") {
+            $env:LP3D_RELEASE_LABEL = "Continuous Build $env:LP3D_VER_BUILD (r$env:LP3D_VER_REVISION)"
+          } ElseIf ($env:APPVEYOR_PROJECT_NAME -eq "lpub3dnext") {
+            $env:LP3D_RELEASE_LABEL = "Continuous Next Build $env:LP3D_VER_BUILD (r$env:LP3D_VER_REVISION)"
+            $env:LP3D_RELEASE_DESCRIPTION = "$env:LP3D_PACKAGE - Next Release"
+          } Else {
+            $env:LP3D_RELEASE_LABEL = "Continuous DevOps Build $env:LP3D_VER_BUILD (r$env:LP3D_VER_REVISION)"
+            $env:LP3D_RELEASE_DESCRIPTION = "$env:LP3D_PACKAGE - Development Release"
+          }
+        }
+      }
+
+# Nothing special here, just the standard GitHub providers
+deploy:
+ - provider: GitHub
+   tag: $(APPVEYOR_REPO_TAG_NAME)
+   repository: trevorsandy/lpub3dnext
+   description: $(LP3D_RELEASE_DESCRIPTION)
+   auth_token:
+     secure: rnf4qpF81ISjm8q13OgkAaoKZReXpjODhU9fbGFMhMydHrda1ezLubGXRU9OKGu4
+   release: $(LP3D_RELEASE_LABEL)
+   artifact: $(LP3D_PACKAGE)-download-package
+   prerelease: false
+   force_update: true
+   on:
+     branch: $(APPVEYOR_REPO_BRANCH)
+     lp3d_deploy_pkg: true
+     appveyor_project_name: lpub3d
+ - provider: GitHub
+   tag: $(APPVEYOR_REPO_TAG_NAME)
+   repository: trevorsandy/lpub3dnext
+   description: 'Commit: $(APPVEYOR_REPO_COMMIT_MESSAGE)'
+   auth_token:
+     secure: rnf4qpF81ISjm8q13OgkAaoKZReXpjODhU9fbGFMhMydHrda1ezLubGXRU9OKGu4
+   release: $(LP3D_RELEASE_LABEL)
+   artifact: $(LP3D_PACKAGE)-download-package
+   prerelease: true
+   force_update: true
+   on:
+     branch: $(APPVEYOR_REPO_BRANCH)
+     lp3d_continuous_build_pkg: true
