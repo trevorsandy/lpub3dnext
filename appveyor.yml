@@ -5,6 +5,10 @@
 #
 version: 'LPub3D-AV-Build-{build}'
 
+branches:
+  only:
+    - master
+
 clone_folder: c:\projects\lpub3dnext
 
 # Skip automatic cloning because we want to restore cached items in the clone directory first
