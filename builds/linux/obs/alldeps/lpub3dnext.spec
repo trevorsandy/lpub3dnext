@@ -182,8 +182,11 @@ BuildRequires: llvm-libs
 BuildRequires: openssl-devel, storaged
 %define build_osmesa 1
 %endif
-%if 0%{?fedora_version}== 27 || 0%{?fedora_version}==28
+%if 0%{?fedora_version}==27 || 0%{?fedora_version}==28
 %define build_osmesa 1
+%endif
+%if 0%{?fedora_version}>30
+BuildRequires: libXext-devel
 %endif
 %endif
 %endif
