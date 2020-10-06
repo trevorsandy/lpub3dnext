@@ -141,8 +141,13 @@ void lcPartPaletteDialog::on_ImportButton_clicked()
 		QJsonArray PartIDArray = PartObject["part"].toObject()["external_ids"].toObject()["LDraw"].toArray();
 		if (!PartIDArray.isEmpty())
 			PartID = PartIDArray.first().toString().toLatin1();
-
-		Palette->Parts.push_back(PartID.toUpper().toStdString() + ".DAT");
+/*** LPub3D Mod - fix Qt < 5.4 build break ***/
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
+	Palette->Parts.push_back(PartID.toUpper().toStdString() + ".DAT");
+#else
+	Palette->Parts.push_back(qPrintable(PartID.toUpper()) + ".DAT");
+#endif
+/*** LPub3D Mod end ***/
 	}
 #endif
 
