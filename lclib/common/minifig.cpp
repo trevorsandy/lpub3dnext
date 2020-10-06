@@ -233,12 +233,15 @@ void MinifigWizard::AddTemplatesJson(const QByteArray& TemplateData)
 	QJsonDocument Document = QJsonDocument::fromJson(TemplateData);
 	QJsonObject RootObject = Document.object();
 
-/*** LPub3D Mod - fix OBS legacy builds break ***/
-	//int Version = RootObject["Version"].toInt(0);
+/*** LPub3D Mod - fix Qt < 5.4 build break ***/
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
+	int Version = RootObject["Version"].toInt(0);
+#else
 	QString VersionStr = RootObject["Version"].toString();
 	bool ok = false;
 	VersionStr.toInt(&ok);
 	int Version = ok ? VersionStr.toInt() : 0;
+#endif
 /*** LPub3D Mod end ***/
 	QJsonObject TemplatesObject;
 
