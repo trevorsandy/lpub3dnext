@@ -15,6 +15,9 @@ export LP3D_BUILD_PKG=yes
 # get target arch
 export TARGET_CPU=`uname -m`
 
+# qmake arguments
+LP3D_QMAKE_ARGS="-makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb"
+
 %:
 	dh $@
 
@@ -64,21 +67,25 @@ configure-stamp:
 override_dh_auto_configure:
 	# LDraw directory - for build check
 	export LDRAWDIR=${HOME}/ldraw; \
-	if which qmake >/dev/null 2>/dev/null ; then QMAKE_EXEC=qmake; echo "DEBUG FOUND: $(qmake -v)"; fi; \
-	LP3D_QMAKE_ARGS="-makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb"; \
-	if [ "${TARGET_CPU}" = "x86_64" ]; then \
-		/usr/lib/x86_64-linux-gnu/qt5/bin/qmake -v; \
-		/usr/lib/x86_64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
-	elif [ "${TARGET_CPU}" = "aarch64" ]; then \
-		/usr/lib/aarch64-linux-gnu/qt5/bin/qmake -v; \
-		/usr/lib/aarch64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
-	elif [ "${TARGET_CPU}" = "armv7l" ]; then \
-		/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake -v; \
-		/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	if which qmake >/dev/null 2>/dev/null ; then \
+		qmake -v; \
+		qmake ${LP3D_QMAKE_ARGS}; \
 	else \
-		/usr/lib/i386-linux-gnu/qt5/bin/qmake -v; \
-		/usr/lib/i386-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+		echo "ERROR - qmake not found"; \
 	fi
+	#if [ "${TARGET_CPU}" = "x86_64" ]; then \
+	#	/usr/lib/x86_64-linux-gnu/qt5/bin/qmake -v; \
+	#	/usr/lib/x86_64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	#elif [ "${TARGET_CPU}" = "aarch64" ]; then \
+	#	/usr/lib/aarch64-linux-gnu/qt5/bin/qmake -v; \
+	#	/usr/lib/aarch64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	#elif [ "${TARGET_CPU}" = "armv7l" ]; then \
+	#	/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake -v; \
+	#	/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	#else \
+	#	/usr/lib/i386-linux-gnu/qt5/bin/qmake -v; \
+	#	/usr/lib/i386-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	#fi
 	# End custom configuration commands
 	touch configure-stamp
 
@@ -89,10 +96,10 @@ override_dh_auto_test:
 	lp3drelease="32bit_release" && \
 	[[ "${TARGET_CPU}" = "x86_64" || "${TARGET_CPU}" = "aarch64" ]] && \
 	lp3drelease="64bit_release"
-	versuffix=$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
-	validexe="mainApp/${lp3drelease}/lpub3d${versuffix}"
-	[ -f "${validexe}" ] && echo "LDD check lpub3d${versuffix}..." && ldd ${validexe} 2>/dev/null || \
-	echo "ERROR - LDD check failed for $(realpath ${validexe})"
+	versuffix=$$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
+	validexe="mainApp/$${lp3drelease}/lpub3d$${versuffix}"
+	[ -f "$${validexe}" ] && echo "LDD check lpub3d$${versuffix}..." && ldd $${validexe} 2>/dev/null || \
+	echo "ERROR - LDD check failed for $$(realpath $${validexe})"
 	# End custom test commands
 	dh_auto_test
 
