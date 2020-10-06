@@ -3,7 +3,7 @@
 # Build all LPub3D 3rd-party renderers
 #
 #  Trevor SANDY <trevor.sandy@gmail.com>
-#  Last Update August 24, 2020
+#  Last Update October 06, 2020
 #  Copyright (c) 2017 - 2020 by Trevor SANDY
 #
 
@@ -584,7 +584,9 @@ elif [ "${TRAVIS}" = "true" ]; then
   Info "Platform Pretty Name.....[Travis CI - ${platform_pretty}]"
 elif [ "${OBS}" = "true" ]; then
   if [ "${TARGET_CPU}" = "aarch64" ]; then
-    platform_pretty="$platform_pretty (ARM)"
+    platform_pretty="$platform_pretty (ARM-AARCH64)"
+  elif [ "${TARGET_CPU}" = "arm7l" ]; then
+    platform_pretty="$platform_pretty (ARM-ARM7L)"
   fi
   Info "Target CPU...............[${TARGET_CPU}]"
   Info "Platform Pretty Name.....[Open Build Service - ${platform_pretty}]"
@@ -704,7 +706,7 @@ fi
 if [[ "$TARGET_CPU" = "x86_64" || "$TARGET_CPU" = "aarch64" ]]; then
   buildArch="64bit_release";
 else
-  buildArch="32bit_release";
+  buildArch="32bit_release";  # arbitrarily use 32bit label for arm7l builds
 fi
 # renderer versions
 VER_LDGLITE=ldglite-1.3

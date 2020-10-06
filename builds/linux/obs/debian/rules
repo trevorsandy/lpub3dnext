@@ -13,7 +13,7 @@ export QT_SELECT=qt5
 export LP3D_BUILD_PKG=yes
 
 # get target arch
-LP3D_TARGET_ARCH=`uname -m`
+export TARGET_CPU=`uname -m`
 
 %:
 	dh $@
@@ -56,7 +56,7 @@ configure-stamp:
 	BINARY_FILE_PATH=$$(readlink -e ../)
 	BINARY_FILE_LIST=builds/linux/obs/debian/source/include-binaries; \
 	sed -i -e "s/__path__/$${BINARY_FILE_PATH}/g" "$${BINARY_FILE_LIST}" \
-		   -e "s/__arch__/${LP3D_TARGET_ARCH}/g" "$${BINARY_FILE_LIST}"; \
+		   -e "s/__arch__/${TARGET_CPU}/g" "$${BINARY_FILE_LIST}"; \
 	echo "Updated `pwd`/$${BINARY_FILE_LIST}:\n`cat $${BINARY_FILE_LIST}`"
 	# build 3rd-party renderers
 	export WD=$$(readlink -e ../); \
@@ -64,12 +64,20 @@ configure-stamp:
 override_dh_auto_configure:
 	# LDraw directory - for build check
 	export LDRAWDIR=${HOME}/ldraw; \
-	if [ "${LP3D_TARGET_ARCH}" = "x86_64" ]; then \
+	if which qmake >/dev/null 2>/dev/null ; then QMAKE_EXEC=qmake; echo "DEBUG FOUND: $(qmake -v)"; fi; \
+	LP3D_QMAKE_ARGS="-makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb"; \
+	if [ "${TARGET_CPU}" = "x86_64" ]; then \
 		/usr/lib/x86_64-linux-gnu/qt5/bin/qmake -v; \
-		/usr/lib/x86_64-linux-gnu/qt5/bin/qmake -makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb; \
+		/usr/lib/x86_64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	elif [ "${TARGET_CPU}" = "aarch64" ]; then \
+		/usr/lib/aarch64-linux-gnu/qt5/bin/qmake -v; \
+		/usr/lib/aarch64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
+	elif [ "${TARGET_CPU}" = "armv7l" ]; then \
+		/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake -v; \
+		/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
 	else \
 		/usr/lib/i386-linux-gnu/qt5/bin/qmake -v; \
-		/usr/lib/i386-linux-gnu/qt5/bin/qmake -makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb; \
+		/usr/lib/i386-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
 	fi
 	# End custom configuration commands
 	touch configure-stamp
@@ -77,12 +85,14 @@ override_dh_auto_configure:
 build: configure-stamp
 override_dh_auto_test:
 	# Start custom test commands
-	if [ -f "mainApp/64bit_release/lpub3d23" ]; then \
-		echo "LDD check mainApp/64bit_release/lpub3d23..."; \
-		ldd mainApp/64bit_release/lpub3d23 2>/dev/null; \
-	else \
-		echo "ERROR - LDD check failed for $$(realpath mainApp/64bit_release/lpub3d23)"; \
-	fi
+	# check lpub3d dependencies
+	lp3drelease="32bit_release" && \
+	[[ "${TARGET_CPU}" = "x86_64" || "${TARGET_CPU}" = "aarch64" ]] && \
+	lp3drelease="64bit_release"
+	versuffix=$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
+	validexe="mainApp/${lp3drelease}/lpub3d${versuffix}"
+	[ -f "${validexe}" ] && echo "LDD check lpub3d${versuffix}..." && ldd ${validexe} 2>/dev/null || \
+	echo "ERROR - LDD check failed for $(realpath ${validexe})"
 	# End custom test commands
 	dh_auto_test
 
