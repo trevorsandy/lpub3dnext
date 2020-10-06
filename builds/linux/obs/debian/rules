@@ -15,9 +15,6 @@ export LP3D_BUILD_PKG=yes
 # get target arch
 export TARGET_CPU=`uname -m`
 
-# qmake arguments
-LP3D_QMAKE_ARGS="-makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb"
-
 %:
 	dh $@
 
@@ -69,7 +66,7 @@ override_dh_auto_configure:
 	export LDRAWDIR=${HOME}/ldraw; \
 	if which qmake >/dev/null 2>/dev/null ; then \
 		qmake -v; \
-		qmake ${LP3D_QMAKE_ARGS}; \
+		qmake -makefile -nocache QMAKE_STRIP=: CONFIG+=release CONFIG+=build_check CONFIG-=debug_and_release CONFIG+=deb; \
 	else \
 		echo "ERROR - qmake not found"; \
 	fi
