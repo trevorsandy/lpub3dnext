@@ -575,7 +575,7 @@ lcFramebuffer lcContext::CreateFramebuffer(int Width, int Height, bool Depth, bo
 			if (Depth)
 			{
 				glBindRenderbuffer(GL_RENDERBUFFER, Framebuffer.mDepthRenderbuffer);
-/*** LPub3D Mod - use appropriate GL_DEPTH_COMPONENT for OBS openSUSE_13.2_ARM ***/
+/*** LPub3D Mod - OBS ARM build for OpenSuse 1320 that need specific GL_DEPTH_COMPONENT ***/
 #ifndef OPENSUSE_1320_ARM
 				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, Width, Height);
 #else

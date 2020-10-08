@@ -52,7 +52,13 @@ BUILD_TARGET   = $$(TARGET_VENDOR)
 BUILD_ARCH     = $$(TARGET_CPU)
 !contains(QT_ARCH, unknown):  BUILD_ARCH = $$QT_ARCH
 else: isEmpty(BUILD_ARCH):    BUILD_ARCH = UNKNOWN ARCH
-contains(HOST_VERSION, 1320):contains(BUILD_TARGET, suse):contains(BUILD_ARCH, aarch64): DEFINES += OPENSUSE_1320_ARM
+# specify define for OBS ARM build for OpenSuse 1320 that need specific GL_DEPTH_COMPONENT defined in lcContext
+# HOST_VERSION = Platform Version
+# BUILD_ARCH   = Target CPU
+# BUILD_TARGET = Platform ID
+contains(BUILD_TARGET, suse): \
+contains(HOST_VERSION, 1320): \
+contains(BUILD_ARCH, aarch64)|contains(BUILD_ARCH, armv7l): DEFINES += OPENSUSE_1320_ARM
 if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)) {
     ARCH     = 64
     STG_ARCH = x86_64
