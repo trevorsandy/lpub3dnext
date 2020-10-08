@@ -70,19 +70,6 @@ override_dh_auto_configure:
 	else \
 		echo "ERROR - qmake not found"; \
 	fi
-	#if [ "${TARGET_CPU}" = "x86_64" ]; then \
-	#	/usr/lib/x86_64-linux-gnu/qt5/bin/qmake -v; \
-	#	/usr/lib/x86_64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
-	#elif [ "${TARGET_CPU}" = "aarch64" ]; then \
-	#	/usr/lib/aarch64-linux-gnu/qt5/bin/qmake -v; \
-	#	/usr/lib/aarch64-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
-	#elif [ "${TARGET_CPU}" = "armv7l" ]; then \
-	#	/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake -v; \
-	#	/usr/lib/arm-linux-gnueabihf/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
-	#else \
-	#	/usr/lib/i386-linux-gnu/qt5/bin/qmake -v; \
-	#	/usr/lib/i386-linux-gnu/qt5/bin/qmake "${LP3D_QMAKE_ARGS}"; \
-	#fi
 	# End custom configuration commands
 	touch configure-stamp
 
@@ -91,8 +78,8 @@ override_dh_auto_test:
 	# Start custom test commands
 	# check lpub3d dependencies
 	lp3drelease="32bit_release" && \
-	[[ "${TARGET_CPU}" = "x86_64" || "${TARGET_CPU}" = "aarch64" ]] && \
-	lp3drelease="64bit_release"
+	[ "${TARGET_CPU}" = "x86_64" ] || [ "${TARGET_CPU}" = "aarch64" ] && \
+	lp3drelease="64bit_release" && echo "$lp3drelease"
 	versuffix=$$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
 	validexe="mainApp/$${lp3drelease}/lpub3d$${versuffix}"
 	[ -f "$${validexe}" ] && echo "LDD check lpub3d$${versuffix}..." && ldd $${validexe} 2>/dev/null || \
