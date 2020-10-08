@@ -36,7 +36,14 @@ BUILD_TARGET   = $$(TARGET_VENDOR)
 BUILD_ARCH     = $$(TARGET_CPU)
 !contains(QT_ARCH, unknown):  BUILD_ARCH = $$QT_ARCH
 else: isEmpty(BUILD_ARCH):    BUILD_ARCH = UNKNOWN ARCH
-contains(HOST_VERSION, 1320):contains(BUILD_TARGET, suse):contains(BUILD_ARCH, aarch64): DEFINES += _OPENSUSE_1320_ARM
+# HOST_VERSION = Platform Version
+# BUILD_ARCH   = Target CPU
+# BUILD_TARGET = Platform ID
+# specify define for OBS ARM platforms that need to use OpenGL headers
+contains(BUILD_ARCH, aarch64)|contains(BUILD_ARCH, armv7l)|contains(QT_ARCH, arm64): ARM_BUILD_ARCH = True
+contains(BUILD_TARGET, suse)|contains(BUILD_TARGET, raspbian)|contains(BUILD_TARGET, debian)|contains(BUILD_TARGET, ubuntu): \
+contains(HOST_VERSION, 1320)|contains(HOST_VERSION, 9)|contains(HOST_VERSION, 10)|contains(HOST_VERSION, 19.10)|contains(HOST_VERSION, 20.04): \
+DEFINES += ARM_USE_OPENGL_HEADERS
 if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)) {
     ARCH  = 64
     LIB_ARCH = 64
