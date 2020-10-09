@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
-# Last Update March 06, 2019
+# Last Update October 09, 2020
 # Copyright 2017-2020 Trevor SANDY
 
 # output every command that modifies files on the build system.
@@ -14,6 +14,9 @@ export LP3D_BUILD_PKG=yes
 
 # get target arch
 export TARGET_CPU=`uname -m`
+
+# get app version suffix
+VER_SUFFIX=`cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g`
 
 %:
 	dh $@
@@ -76,13 +79,10 @@ override_dh_auto_configure:
 build: configure-stamp
 override_dh_auto_test:
 	# Start custom test commands
-	# check lpub3d dependencies
-	lp3drelease="32bit_release" && \
-	[ "${TARGET_CPU}" = "x86_64" ] || [ "${TARGET_CPU}" = "aarch64" ] && lp3drelease="64bit_release"
-	versuffix=$$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
-	validexe="mainApp/$${lp3drelease}/lpub3d$${versuffix}"
-	[ -f "$${validexe}" ] && echo "LDD check lpub3d$${versuffix}..." && ldd $${validexe} 2>/dev/null || \
-	echo "ERROR - LDD check failed for $$(realpath $${validexe})"
+	lp3dRelease="32bit_release" && [ ${TARGET_CPU} = x86_64 ] || [ ${TARGET_CPU} = aarch64 ] && lp3dRelease="64bit_release"
+	validExe="mainApp/$${lp3dRelease}/lpub3d${VER_SUFFIX}"
+	[ -f "$${validExe}" ] && echo "LDD check lpub3d${VER_SUFFIX}..." && ldd $${validExe} 2>/dev/null || \
+	echo "ERROR - LDD check failed for $$(realpath $${validExe})"
 	# End custom test commands
 	dh_auto_test
 
