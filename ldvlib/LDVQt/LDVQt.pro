@@ -60,7 +60,9 @@ contains(HOST_VERSION,1320)|contains(HOST_VERSION,9)|contains(HOST_VERSION,10)|c
 ARM_HOST_VERSION = True
 contains(ARM_BUILD_TARGET,True):contains(ARM_HOST_VERSION,True) {
     DEFINES += ARM_USE_OPENGL_HEADERS
-    message("~~~ $$upper($$QT_ARCH) build $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} set ARM_USE_OPENGL_HEADERS ~~~")
+    message("~~~ $$upper($$QT_ARCH) build - $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} set ARM_USE_OPENGL_HEADERS ~~~")
+} else {
+    message("~~~ $$upper($$QT_ARCH) build - $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} ~~~")
 }
 
 # The ABI version.
