@@ -40,10 +40,6 @@ BUILD_ARCH     = $$(TARGET_CPU)
 !contains(QT_ARCH,unknown):  BUILD_ARCH = $$QT_ARCH
 else: isEmpty(BUILD_ARCH):   BUILD_ARCH = UNKNOWN ARCH
 
-# HOST_VERSION = Platform Version
-# BUILD_ARCH   = Target CPU
-# BUILD_TARGET = Platform ID
-
 if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)) {
     ARCH  = 64
     LIB_ARCH = 64
@@ -52,6 +48,9 @@ if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)) {
     LIB_ARCH =
 }
 
+# HOST_VERSION = Platform Version
+# BUILD_ARCH   = Target CPU
+# BUILD_TARGET = Platform ID
 # specify define for OBS ARM platforms that need to use OpenGL headers
 contains(BUILD_ARCH,arm64)|contains(BUILD_ARCH,arm): \
 ARM_BUILD_ARCH = True
