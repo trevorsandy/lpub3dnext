@@ -51,6 +51,7 @@ contains(LOAD_LDV_HEADERS,True) {
     system( $$COPY_CMD $$system_path( $${LDVHDRDIR}/TRE/*.h) $$system_path( $${LDVINCLUDE}/TRE/ ) )
     system( $$COPY_CMD $$system_path( $${LDVHDRDIR}/TCFoundation/*.h) $$system_path( $${LDVINCLUDE}/TCFoundation/ ) )
     system( $$COPY_CMD $$system_path( $${LDVHDRDIR}/3rdParty/*.h) $$system_path( $${LDVINCLUDE}/3rdParty/ ) )
+    
     if (contains(ARM_BUILD_ARCH,True)) {
         if(!contains(DEFINES,ARM_USE_OPENGL_HEADERS)) {
             system( touch $$system_path( $${LDVHDRDIR}/GL/glext.h ) )
