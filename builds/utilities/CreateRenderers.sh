@@ -706,8 +706,9 @@ fi
 if [[ "$TARGET_CPU" = "x86_64" || "$TARGET_CPU" = "aarch64" ]]; then
   buildArch="64bit_release";
 else
-  buildArch="32bit_release";  # arbitrarily use 32bit label for arm7l builds
+  buildArch="32bit_release";
 fi
+
 # renderer versions
 VER_LDGLITE=ldglite-1.3
 VER_LDVIEW=ldview-4.4

@@ -78,8 +78,7 @@ override_dh_auto_test:
 	# Start custom test commands
 	# check lpub3d dependencies
 	lp3drelease="32bit_release" && \
-	[ "${TARGET_CPU}" = "x86_64" ] || [ "${TARGET_CPU}" = "aarch64" ] && \
-	lp3drelease="64bit_release" && echo "$lp3drelease"
+	[ "${TARGET_CPU}" = "x86_64" ] || [ "${TARGET_CPU}" = "aarch64" ] && lp3drelease="64bit_release"
 	versuffix=$$(cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g)
 	validexe="mainApp/$${lp3drelease}/lpub3d$${versuffix}"
 	[ -f "$${validexe}" ] && echo "LDD check lpub3d$${versuffix}..." && ldd $${validexe} 2>/dev/null || \
