@@ -25,26 +25,26 @@ INCLUDEPATH += /usr/local/include
 DEFINES += _QT
 DEFINES += _NO_BOOST
 DEFINES += _TC_STATIC
-DEFINES += _WIN_UTF8_PATHS
 DEFINES += QT_THREAD_SUPPORT
 !freebsd: \
 DEFINES += EXPORT_3DS
+win32: \
+DEFINES += _WIN_UTF8_PATHS
 
 # platform switch
 HOST_VERSION   = $$(PLATFORM_VER)
 BUILD_TARGET   = $$(TARGET_VENDOR)
 BUILD_ARCH     = $$(TARGET_CPU)
-!contains(QT_ARCH, unknown):  BUILD_ARCH = $$QT_ARCH
-else: isEmpty(BUILD_ARCH):    BUILD_ARCH = UNKNOWN ARCH
+
+# for aarch64, QT_ARCH = arm64, for arm7l, QT_ARCH = arm
+!contains(QT_ARCH,unknown):  BUILD_ARCH = $$QT_ARCH
+else: isEmpty(BUILD_ARCH):   BUILD_ARCH = UNKNOWN ARCH
+
 # HOST_VERSION = Platform Version
 # BUILD_ARCH   = Target CPU
 # BUILD_TARGET = Platform ID
-# specify define for OBS ARM platforms that need to use OpenGL headers
-contains(BUILD_ARCH, aarch64)|contains(BUILD_ARCH, armv7l)|contains(QT_ARCH, arm64): ARM_BUILD_ARCH = True
-contains(BUILD_TARGET, suse)|contains(BUILD_TARGET, raspbian)|contains(BUILD_TARGET, debian)|contains(BUILD_TARGET, ubuntu): \
-contains(HOST_VERSION, 1320)|contains(HOST_VERSION, 9)|contains(HOST_VERSION, 10)|contains(HOST_VERSION, 19.10)|contains(HOST_VERSION, 20.04): \
-DEFINES += ARM_USE_OPENGL_HEADERS
-if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)) {
+
+if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)) {
     ARCH  = 64
     LIB_ARCH = 64
 } else {
@@ -52,8 +52,15 @@ if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarc
     LIB_ARCH =
 }
 
-unix: !macx: TARGET = ldvqt
-else:        TARGET = LDVQt
+# specify define for OBS ARM platforms that need to use OpenGL headers
+contains(BUILD_ARCH,arm64)|contains(BUILD_ARCH,arm): \
+ARM_BUILD_ARCH = True
+contains(BUILD_TARGET,suse)|contains(BUILD_TARGET,raspbian)|contains(BUILD_TARGET,debian)|contains(BUILD_TARGET,ubuntu): \
+ARM_BUILD_TARGET = True
+contains(HOST_VERSION,1320)|contains(HOST_VERSION,9)|contains(HOST_VERSION,10)|contains(HOST_VERSION,19.10)|contains(HOST_VERSION,20.04): \
+ARM_HOST_VERSION = True
+contains(ARM_BUILD_TARGET,True):contains(ARM_HOST_VERSION,True): \
+DEFINES += ARM_USE_OPENGL_HEADERS
 
 # The ABI version.
 VER_MAJ = 4
@@ -62,6 +69,9 @@ VER_PAT = 0
 VER_BLD = 0
 win32: VERSION = $$VER_MAJ"."$$VER_MIN"."$$VER_PAT"."$$VER_BLD  # major.minor.patch.build
 else: VERSION  = $$VER_MAJ"."$$VER_MIN"."$$VER_PAT              # major.minor.patch
+
+unix: !macx: TARGET = ldvqt
+else:        TARGET = LDVQt
 
 # Indicate build type
 staticlib {

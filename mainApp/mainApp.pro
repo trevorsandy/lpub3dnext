@@ -50,16 +50,12 @@ LDVMESSAGESINI = ldvMessages.ini
 HOST_VERSION   = $$(PLATFORM_VER)
 BUILD_TARGET   = $$(TARGET_VENDOR)
 BUILD_ARCH     = $$(TARGET_CPU)
+
+# for aarch64, QT_ARCH = arm64, for arm7l, QT_ARCH = arm
 !contains(QT_ARCH, unknown):  BUILD_ARCH = $$QT_ARCH
 else: isEmpty(BUILD_ARCH):    BUILD_ARCH = UNKNOWN ARCH
-# specify define for OBS ARM build for OpenSuse 1320 that need specific GL_DEPTH_COMPONENT defined in lcContext
-# HOST_VERSION = Platform Version
-# BUILD_ARCH   = Target CPU
-# BUILD_TARGET = Platform ID
-contains(BUILD_TARGET, suse): \
-contains(HOST_VERSION, 1320): \
-contains(BUILD_ARCH, aarch64)|contains(BUILD_ARCH, armv7l): DEFINES += OPENSUSE_1320_ARM
-if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)) {
+
+if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)) {
     ARCH     = 64
     STG_ARCH = x86_64
     LIB_ARCH = 64
@@ -68,9 +64,20 @@ if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarc
     STG_ARCH = x86
     LIB_ARCH =
 }
-if (contains(QT_ARCH, arm)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)): CHIPSET = ARM
-else:                                                                               CHIPSET = X86
+
+if (contains(BUILD_ARCH,arm64)|contains(BUILD_ARCH,arm)): CHIPSET = ARM
+else:                                                     CHIPSET = X86
+
 DEFINES     += VER_ARCH=\\\"$$ARCH\\\"
+
+# specify define for OBS ARM build for OpenSuse 1320 that need specific GL_DEPTH_COMPONENT defined in lcContext
+# HOST_VERSION = Platform Version
+# BUILD_ARCH   = Target CPU
+# BUILD_TARGET = Platform ID
+contains(BUILD_TARGET,suse): \
+contains(HOST_VERSION,1320): \
+contains(BUILD_ARCH,arm64)|contains(BUILD_ARCH,arm): \
+DEFINES += OPENSUSE_1320_ARM
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
