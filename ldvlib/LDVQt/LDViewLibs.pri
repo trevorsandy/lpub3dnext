@@ -214,7 +214,7 @@ contains(LOAD_LDVLIBS,True) {
          !exists($${_ZLIB_DEP}):  USE_LOCAL_ZLIB_LIB = False
 #        else:message("~~~ Local z library $${_ZLIB_DEP} detected ~~~")
     } else {
-         !exists($${_MINIZIP_DEP}): USE_LOCAL_MINIZIP_LIB = False
+         isEmpty(_MINIZIP_DEP)|!exists($${_MINIZIP_DEP}): USE_LOCAL_MINIZIP_LIB = False
 #        else:message("~~~ Local minizip library $${_MINIZIP_DEP} detected ~~~")
     }
 

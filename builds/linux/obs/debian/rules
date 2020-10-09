@@ -12,8 +12,14 @@ export QT_SELECT=qt5
 # for 3rd party apps install
 export LP3D_BUILD_PKG=yes
 
-# get target arch
+# get CPU arch
 export TARGET_CPU=`uname -m`
+
+# get OS name
+export TARGET_VENDOR=`. /etc/os-release 2>/dev/null; [ -n "$ID" ] && echo $ID || echo $OS_NAME | awk '{print tolower($0)}'`
+
+# get OS version
+export PLATFORM_VER=`. /etc/os-release 2>/dev/null; [ -n "$VERSION_ID" ] && echo $VERSION_ID || echo 'undefined'`
 
 # get app version suffix
 VER_SUFFIX=`cat builds/utilities/version.info | cut -d " " -f 1-2 | sed s/" "//g`
@@ -65,6 +71,8 @@ configure-stamp:
 	export WD=$$(readlink -e ../); \
 	chmod +x builds/utilities/CreateRenderers.sh && ./builds/utilities/CreateRenderers.sh
 override_dh_auto_configure:
+	echo Platform ID.......$TARGET_VENDOR
+	echo Platform Version..$PLATFORM_VER
 	# LDraw directory - for build check
 	export LDRAWDIR=${HOME}/ldraw; \
 	if which qmake >/dev/null 2>/dev/null ; then \
@@ -80,9 +88,11 @@ build: configure-stamp
 override_dh_auto_test:
 	# Start custom test commands
 	lp3dRelease="32bit_release" && [ ${TARGET_CPU} = x86_64 ] || [ ${TARGET_CPU} = aarch64 ] && lp3dRelease="64bit_release"
-	validExe="mainApp/$${lp3dRelease}/lpub3d${VER_SUFFIX}"
-	[ -f "$${validExe}" ] && echo "LDD check lpub3d${VER_SUFFIX}..." && ldd $${validExe} 2>/dev/null || \
-	echo "ERROR - LDD check failed for $$(realpath $${validExe})"
+	echo ReleaseArch.......$${lp3dRelease}
+	echo VersionSuffix.....${VER_SUFFIX}
+	#validExe="mainApp/$${lp3dRelease}/lpub3d${VER_SUFFIX}"
+	#[ -f "$${validExe}" ] && echo "LDD check lpub3d${VER_SUFFIX}..." && ldd $${validExe} 2>/dev/null || \
+	#echo "ERROR - LDD check failed for $$(realpath $${validExe})"
 	# End custom test commands
 	dh_auto_test
 
