@@ -3,7 +3,7 @@
 # Build all LPub3D 3rd-party renderers
 #
 #  Trevor SANDY <trevor.sandy@gmail.com>
-#  Last Update October 06, 2020
+#  Last Update October 10, 2020
 #  Copyright (c) 2017 - 2020 by Trevor SANDY
 #
 
@@ -583,10 +583,8 @@ if [ "${DOCKER}" = "true" ]; then
 elif [ "${TRAVIS}" = "true" ]; then
   Info "Platform Pretty Name.....[Travis CI - ${platform_pretty}]"
 elif [ "${OBS}" = "true" ]; then
-  if [ "${TARGET_CPU}" = "aarch64" ]; then
-    platform_pretty="$platform_pretty (ARM-AARCH64)"
-  elif [ "${TARGET_CPU}" = "arm7l" ]; then
-    platform_pretty="$platform_pretty (ARM-ARM7L)"
+  if [[ "${TARGET_CPU}" = "aarch64" || "${TARGET_CPU}" = "arm7l" ]]; then
+    platform_pretty="$platform_pretty (ARM-${TARGET_CPU})"
   fi
   Info "Target CPU...............[${TARGET_CPU}]"
   Info "Platform Pretty Name.....[Open Build Service - ${platform_pretty}]"

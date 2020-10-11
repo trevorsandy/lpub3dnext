@@ -31,14 +31,11 @@ DEFINES += EXPORT_3DS
 win32: \
 DEFINES += _WIN_UTF8_PATHS
 
-# platform switch
-HOST_VERSION   = $$(PLATFORM_VER)
-BUILD_TARGET   = $$(TARGET_VENDOR)
-BUILD_ARCH     = $$(TARGET_CPU)
-
+# platform architecture
 # for aarch64, QT_ARCH = arm64, for arm7l, QT_ARCH = arm
-!contains(QT_ARCH,unknown):  BUILD_ARCH = $$QT_ARCH
-else: isEmpty(BUILD_ARCH):   BUILD_ARCH = UNKNOWN ARCH
+!contains(QT_ARCH,unknown): BUILD_ARCH = $$QT_ARCH       # Target CPU
+else:                       BUILD_ARCH = $$(TARGET_CPU) 
+isEmpty(BUILD_ARCH):        BUILD_ARCH = UNKNOWN ARCH
 
 if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)) {
     ARCH  = 64
@@ -48,19 +45,22 @@ if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)) {
     LIB_ARCH =
 }
 
-# HOST_VERSION = Platform Version
-# BUILD_ARCH   = Target CPU
-# BUILD_TARGET = Platform ID
+# platform name and version
+BUILD_TARGET   = $$(TARGET_VENDOR)  # Platform ID
+HOST_VERSION   = $$(PLATFORM_VER)   # Platform Version
+
 # specify define for OBS ARM platforms that need to use OpenGL headers
 contains(BUILD_ARCH,arm64)|contains(BUILD_ARCH,arm): \
 ARM_BUILD_ARCH = True
-contains(BUILD_TARGET,suse)|contains(BUILD_TARGET,raspbian)|contains(BUILD_TARGET,debian)|contains(BUILD_TARGET,ubuntu): \
+
+# specify define for OBS ARM platforms that need to suppress local glext.h header
+contains(BUILD_TARGET,suse): \
 ARM_BUILD_TARGET = True
-contains(HOST_VERSION,1320)|contains(HOST_VERSION,9)|contains(HOST_VERSION,10)|contains(HOST_VERSION,19.10)|contains(HOST_VERSION,20.04): \
+contains(HOST_VERSION,1320): \
 ARM_HOST_VERSION = True
 contains(ARM_BUILD_TARGET,True):contains(ARM_HOST_VERSION,True) {
-    DEFINES += ARM_USE_OPENGL_HEADERS
-    message("~~~ $$upper($$QT_ARCH) build - $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} set ARM_USE_OPENGL_HEADERS ~~~")
+    DEFINES += ARM_SKIP_GL_HEADERS
+    message("~~~ $$upper($$QT_ARCH) build - $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} define ARM_SKIP_GL_HEADERS ~~~")
 } else {
     message("~~~ $$upper($$QT_ARCH) build - $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} ~~~")
 }
